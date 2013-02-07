@@ -146,6 +146,10 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 		if (tsk->flags & PF_KTHREAD)
 			continue;
 
+		/* if task no longer has any memory ignore it */
+		if (test_task_flag(tsk, TIF_MM_RELEASED))
+			continue;
+
 		if (time_before_eq(jiffies, lowmem_deathpending_timeout)) {
 			if (test_task_flag(tsk, TIF_MEMDIE)) {
 				rcu_read_unlock();
@@ -208,11 +212,12 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 			     free);
 		lowmem_deathpending_timeout = jiffies + HZ;
 		rem += selected_tasksize;
-	}
+		rcu_read_unlock();
+	} else
+		rcu_read_unlock();
 
 	lowmem_print(4, "lowmem_scan %lu, %x, return %lu\n",
 		     sc->nr_to_scan, sc->gfp_mask, rem);
-	rcu_read_unlock();
 	return rem;
 }
 
