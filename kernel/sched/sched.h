@@ -554,6 +554,16 @@ struct rq {
 	struct sched_avg avg;
 };
 
+static inline u64 rq_clock(struct rq *rq)
+{
+	return rq->clock;
+}
+
+static inline u64 rq_clock_task(struct rq *rq)
+{
+	return rq->clock_task;
+}
+
 static inline int cpu_of(struct rq *rq)
 {
 #ifdef CONFIG_SMP
