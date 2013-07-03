@@ -2868,6 +2868,13 @@ loop_again:
 		}
 
 		/*
+		 * If we're getting trouble reclaiming, start doing writepage
+		 * even in laptop mode.
+		 */
+		if (sc.priority < DEF_PRIORITY - 2)
+			sc.may_writepage = 1;
+
+		/*
 		 * Now scan the zone in the dma->highmem direction, stopping
 		 * at the last zone which needs scanning.
 		 *
@@ -2928,13 +2935,6 @@ loop_again:
 			    !zone_balanced(zone, testorder,
 					   balance_gap, end_zone))
 				kswapd_shrink_zone(zone, &sc, lru_pages);
-
-			/*
-			 * If we're getting trouble reclaiming, start doing
-			 * writepage even in laptop mode.
-			 */
-			if (sc.priority < DEF_PRIORITY - 2)
-				sc.may_writepage = 1;
 
 			if (!zone_reclaimable(zone)) {
 				if (end_zone && end_zone == i)
