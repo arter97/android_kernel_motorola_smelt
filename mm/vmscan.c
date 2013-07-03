@@ -2975,7 +2975,7 @@ loop_again:
 		 */
 		if (sc.nr_reclaimed >= SWAP_CLUSTER_MAX)
 			break;
-	} while (--sc.priority >= 0);
+	} while (--sc.priority >= 1);
 
 out:
 	if (!pgdat_is_balanced) {
