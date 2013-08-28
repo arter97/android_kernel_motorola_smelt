@@ -108,7 +108,7 @@ static inline struct task_struct *pick_first_task(void);
 static inline struct task_struct *pick_last_task(void);
 #endif
 
-static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
+static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 {
 	struct task_struct *tsk;
 	struct task_struct *selected = NULL;
@@ -371,7 +371,8 @@ static inline struct task_struct *pick_last_task(void)
 #endif
 
 static struct shrinker lowmem_shrinker = {
-	.shrink = lowmem_shrink,
+	.scan_objects = lowmem_scan,
+	.count_objects = lowmem_count,
 	.seeks = DEFAULT_SEEKS * 16
 };
 
