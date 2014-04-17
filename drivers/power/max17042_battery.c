@@ -102,6 +102,8 @@ CONFIG_TS_BIT_ENBL | CONFIG_SS_BIT_ENBL)
 #define RESULT_PROPERTY			"result"
 #define START_PROPERTY			"start"
 
+#define MAX17042_CHRG_CONV_FCTR         500
+
 /* we need to set the alert threshold to a default value
    before powerlib calls into the driver */
 #define DEFAULT_ALERT_THRESHOLD	1
@@ -216,6 +218,36 @@ static int max17042_conv_temp(struct max17042_temp_conv *conv, int t)
 	}
 }
 
+static int max17042_read_charge_counter(struct i2c_client *client, int ql)
+{
+	int uah = 0, uah_old = 0, uahl = 0;
+	int i;
+	uah = max17042_read_reg(client, MAX17042_QH);
+	if (uah < 0)
+		return uah;
+	if (ql) {
+		/* check if QH data-change between QH read and QL read */
+		for (i = 0; i < 3; i++) {
+			uahl = max17042_read_reg(client, MAX17042_QL);
+			if (uahl < 0)
+				return uahl;
+			uah_old = uah;
+			uah = max17042_read_reg(client, MAX17042_QH);
+			if (uah < 0)
+				return uah;
+			if (uah == uah_old)
+				break;
+		}
+		if (uah == uah_old)
+			uah = uah * MAX17042_CHRG_CONV_FCTR +
+				((uahl * MAX17042_CHRG_CONV_FCTR) >> 16);
+		else
+			uah = -ETIMEDOUT;
+	} else
+		uah = uah * MAX17042_CHRG_CONV_FCTR;
+	return uah;
+}
+
 static int max17042_get_property(struct power_supply *psy,
 			    enum power_supply_property psp,
 			    union power_supply_propval *val)
@@ -309,11 +341,11 @@ static int max17042_get_property(struct power_supply *psy,
 		val->intval = data64;
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
-		ret = max17042_read_reg(chip->client, MAX17042_QH);
+		ret = max17042_read_charge_counter(chip->client, 1);
 		if (ret < 0)
 			return ret;
 
-		val->intval = ret * 1000 / 2;
+		val->intval = ret;
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
 		ret = max17042_read_reg(chip->client, MAX17042_TEMP);
