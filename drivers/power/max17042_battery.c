@@ -329,7 +329,11 @@ static int max17042_get_property(struct power_supply *psy,
 		if (ret < 0)
 			return ret;
 
-		val->intval = ret >> 8;
+		ret >>= 8;
+		if (ret > 100)
+			ret = 100;
+
+		val->intval = ret;
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_FULL:
 		ret = max17042_read_reg(chip->client, MAX17042_FullCAP);
