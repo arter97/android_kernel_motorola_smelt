@@ -331,7 +331,12 @@ static int max17042_get_property(struct power_supply *psy,
 		if (ret < 0)
 			return ret;
 
-		ret >>= 8;
+		if ((ret & 0xFF) != 0) {
+			ret >>= 8;
+			ret++; /* Round up */
+		} else
+			ret >>= 8;
+
 		if (ret > 100)
 			ret = 100;
 
