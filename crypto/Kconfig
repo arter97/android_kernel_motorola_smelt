@@ -629,6 +629,12 @@ config CRYPTO_GHASH_CLMUL_NI_INTEL
 	  GHASH is message digest algorithm for GCM (Galois/Counter Mode).
 	  The implementation is accelerated by CLMUL-NI of Intel.
 
+config CRYPTO_CHACHA20_NEON
+	tristate "NEON accelerated ChaCha20 symmetric cipher"
+	depends on KERNEL_MODE_NEON
+	select CRYPTO_BLKCIPHER
+	select CRYPTO_CHACHA20
+
 comment "Ciphers"
 
 config CRYPTO_AES
