@@ -20,6 +20,7 @@
 #include <linux/uaccess.h>
 #include <linux/mount.h>
 #include <linux/pagevec.h>
+#include <linux/uio.h>
 #include <linux/random.h>
 #include <linux/aio.h>
 #include <linux/uuid.h>
@@ -2542,6 +2543,7 @@ static ssize_t f2fs_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
 {
 	struct file *file = iocb->ki_filp;
 	struct inode *inode = file_inode(file);
+	struct iov_iter i;
 	size_t count;
 	struct blk_plug plug;
 	ssize_t ret;
@@ -2556,9 +2558,17 @@ static ssize_t f2fs_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
 	inode_lock(inode);
 	ret = generic_write_checks(file, &pos, &count, S_ISBLK(inode->i_mode));
 	if (!ret) {
-		int err = f2fs_preallocate_blocks(inode, pos, count,
+		int err;
+
+	        iov_iter_init(&i, iov, nr_segs, count, 0);
+
+		if (iov_iter_fault_in_readable(&i, iov_length(iov, nr_segs)))
+			set_inode_flag(inode, FI_NO_PREALLOC);
+
+		err = f2fs_preallocate_blocks(inode, pos, count,
 				iocb->ki_filp->f_flags & O_DIRECT);
 		if (err) {
+			clear_inode_flag(inode, FI_NO_PREALLOC);
 			inode_unlock(inode);
 			return err;
 		}
@@ -2566,6 +2576,7 @@ static ssize_t f2fs_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
 		ret = __generic_file_aio_write(iocb, iov, nr_segs,
 							&iocb->ki_pos);
 		blk_finish_plug(&plug);
+		clear_inode_flag(inode, FI_NO_PREALLOC);
 
 		if (ret > 0)
 			f2fs_update_iostat(F2FS_I_SB(inode), APP_WRITE_IO, ret);
