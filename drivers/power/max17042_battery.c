@@ -223,6 +223,7 @@ static int max17042_get_property(struct power_supply *psy,
 	struct max17042_chip *chip = container_of(psy,
 				struct max17042_chip, battery);
 	int ret;
+	u64 data64;
 
 	if (!chip->init_complete)
 		return -EAGAIN;
@@ -303,7 +304,9 @@ static int max17042_get_property(struct power_supply *psy,
 		if (ret < 0)
 			return ret;
 
-		val->intval = ret * 1000 / 2;
+		data64 = ret * 5000000ll;
+		do_div(data64, chip->pdata->r_sns);
+		val->intval = data64;
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
 		ret = max17042_read_reg(chip->client, MAX17042_QH);
