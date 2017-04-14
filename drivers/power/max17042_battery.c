@@ -317,12 +317,7 @@ static int max17042_get_property(struct power_supply *psy,
 		if (ret < 0)
 			return ret;
 
-		val->intval = ret;
-		/* The value is signed. */
-		if (val->intval & 0x8000) {
-			val->intval = (0x7fff & ~val->intval) + 1;
-			val->intval *= -1;
-		}
+		val->intval = sign_extend32(ret, 15);
 
 		/* The value is converted into deci-centigrade scale */
 		/* Units of LSB = 1 / 256 degree Celsius */
@@ -339,13 +334,7 @@ static int max17042_get_property(struct power_supply *psy,
 			if (ret < 0)
 				return ret;
 
-			val->intval = ret;
-			if (val->intval & 0x8000) {
-				/* Negative */
-				val->intval = ~val->intval & 0x7fff;
-				val->intval++;
-				val->intval *= -1;
-			}
+			val->intval = sign_extend32(ret, 15);
 			val->intval *= 1562500 / chip->pdata->r_sns;
 		} else {
 			return -EINVAL;
@@ -358,13 +347,7 @@ static int max17042_get_property(struct power_supply *psy,
 			if (ret < 0)
 				return ret;
 
-			val->intval = ret;
-			if (val->intval & 0x8000) {
-				/* Negative */
-				val->intval = ~val->intval & 0x7fff;
-				val->intval++;
-				val->intval *= -1;
-			}
+			val->intval = sign_extend32(ret, 15);
 			val->intval *= 1562500 / chip->pdata->r_sns;
 		} else {
 			return -EINVAL;
