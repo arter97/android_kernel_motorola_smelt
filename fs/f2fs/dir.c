@@ -872,13 +872,14 @@ static int f2fs_readdir(struct file *file, void *dirent, filldir_t filldir)
 
 	if (f2fs_has_inline_dentry(inode)) {
 		err = f2fs_read_inline_dir(file, dirent, filldir, &fstr);
-		goto out;
+		goto out_free;
 	}
 
 	bit_pos = (pos % NR_DENTRY_IN_BLOCK);
 	n = (pos / NR_DENTRY_IN_BLOCK);
 
-	for (; n < npages; n++) {
+	for (; n < npages;
+		n++, bit_pos = 0, file->f_pos = (n + 1) * NR_DENTRY_IN_BLOCK) {
 
 		/* allow readdir() to be interrupted */
 		if (fatal_signal_pending(current)) {
@@ -899,7 +900,7 @@ static int f2fs_readdir(struct file *file, void *dirent, filldir_t filldir)
 				err = 0;
 				continue;
 			} else {
-				goto out;
+				goto out_free;
 			}
 		}
 
@@ -915,12 +916,10 @@ static int f2fs_readdir(struct file *file, void *dirent, filldir_t filldir)
 			break;
 		}
 
-		bit_pos = 0;
-		file->f_pos = (n + 1) * NR_DENTRY_IN_BLOCK;
 		kunmap(dentry_page);
 		f2fs_put_page(dentry_page, 1);
 	}
-out:
+out_free:
 	fscrypt_fname_free_buffer(&fstr);
 	return err < 0 ? err : 0;
 }
