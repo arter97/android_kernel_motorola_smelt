@@ -225,6 +225,8 @@ static int f2fs_set_acl(struct inode *inode, int type,
 		return 0;
 	if (S_ISLNK(inode->i_mode))
 		return -EOPNOTSUPP;
+	if (unlikely(f2fs_cp_error(F2FS_I_SB(inode))))
+		return -EIO;
 
 	switch (type) {
 	case ACL_TYPE_ACCESS:
