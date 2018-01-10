@@ -349,9 +349,10 @@ static inline int crypto_wait_req(int err, struct crypto_wait *wait)
 	switch (err) {
 	case -EINPROGRESS:
 	case -EBUSY:
-		wait_for_completion(&wait->completion);
-		reinit_completion(&wait->completion);
-		err = wait->err;
+		err = wait_for_completion_interruptible(&wait->completion);
+		if (!err)
+			err = wait->err;
+		INIT_COMPLETION(wait->completion);
 		break;
 	};
 
