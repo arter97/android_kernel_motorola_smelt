@@ -182,14 +182,14 @@ void high_prio_rx(unsigned long data)
 	const unsigned	base_addr = ipc_regs[LOCAL_IPC_ID];
 
 	/* Clear interrupt source. */
-	__raw_writel_no_log(IPC_INTR(IPC_INTR_FIFO_AF),
+	__raw_writel(IPC_INTR(IPC_INTR_FIFO_AF),
 				(void *)(base_addr + CDU_INT0_CLEAR_F0));
 
 	/* Process all messages. */
 	ipc_recv(IPC_FIFO_BUF_NUM_HIGH, ipc_trns_prio_1);
 
 	/* Unmask IPC AF interrupt again. */
-	__raw_writel_no_log(~IPC_INTR(IPC_INTR_FIFO_AF),
+	__raw_writel(~IPC_INTR(IPC_INTR_FIFO_AF),
 					(void *)(base_addr + CDU_INT0_MASK_F0));
 
 	enable_irq(dev->irq);
@@ -202,7 +202,7 @@ irqreturn_t danipc_interrupt(int irq, void *data)
 	const unsigned	base_addr = ipc_regs[LOCAL_IPC_ID];
 
 	/* Mask all IPC interrupts. */
-	__raw_writel_no_log(~0, (void *)(base_addr + CDU_INT0_MASK_F0));
+	__raw_writel(~0, (void *)(base_addr + CDU_INT0_MASK_F0));
 
 	disable_irq_nosync(irq);
 
@@ -215,17 +215,17 @@ void danipc_init_irq(struct net_device *dev, struct danipc_priv *priv)
 {
 	const unsigned	base_addr = ipc_regs[LOCAL_IPC_ID];
 
-	__raw_writel_no_log(AF_THRESHOLD,
+	__raw_writel(AF_THRESHOLD,
 				(void *)(base_addr + FIFO_THR_AF_CFG_F0));
-	__raw_writel_no_log(IPC_INTR(IPC_INTR_FIFO_AF),
+	__raw_writel(IPC_INTR(IPC_INTR_FIFO_AF),
 				(void *)(base_addr + CDU_INT0_CLEAR_F0));
-	__raw_writel_no_log(IPC_INTR(IPC_INTR_FIFO_AF),
+	__raw_writel(IPC_INTR(IPC_INTR_FIFO_AF),
 				(void *)(base_addr + CDU_INT0_ENABLE_F0));
-	__raw_writel_no_log(~IPC_INTR(IPC_INTR_FIFO_AF),
+	__raw_writel(~IPC_INTR(IPC_INTR_FIFO_AF),
 				(void *)(base_addr + CDU_INT0_MASK_F0));
 
 	/* Enable passing all IPC interrupts. */
-	__raw_writel_no_log(~0, krait_ipc_mux);
+	__raw_writel(~0, krait_ipc_mux);
 }
 
 

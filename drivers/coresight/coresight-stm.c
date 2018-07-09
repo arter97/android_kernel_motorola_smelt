@@ -36,9 +36,9 @@
 #define stm_writel(drvdata, val, off)	__raw_writel((val), drvdata->base + off)
 #define stm_readl(drvdata, off)		__raw_readl(drvdata->base + off)
 
-#define stm_data_writeb(val, addr)	__raw_writeb_no_log(val, addr)
-#define stm_data_writew(val, addr)	__raw_writew_no_log(val, addr)
-#define stm_data_writel(val, addr)	__raw_writel_no_log(val, addr)
+#define stm_data_writeb(val, addr)	__raw_writeb(val, addr)
+#define stm_data_writew(val, addr)	__raw_writew(val, addr)
+#define stm_data_writel(val, addr)	__raw_writel(val, addr)
 
 #define STM_LOCK(drvdata)						\
 do {									\

@@ -247,7 +247,7 @@ static void *smd_memcpy_to_fifo(void *dest, const void *src, size_t num_bytes,
 			ret = copy_from_user(temp_dst, temp_src, 1);
 			BUG_ON(ret != 0);
 		} else {
-			__raw_writeb_no_log(temp_src->u8, temp_dst);
+			__raw_writeb(temp_src->u8, temp_dst);
 		}
 
 		temp_src = (union fifo_mem *)((uintptr_t)temp_src + 1);
@@ -262,7 +262,7 @@ static void *smd_memcpy_to_fifo(void *dest, const void *src, size_t num_bytes,
 				sizeof(union fifo_mem));
 			BUG_ON(ret != 0);
 		} else {
-			__raw_writeq_no_log(temp_src->u64, temp_dst);
+			__raw_writeq(temp_src->u64, temp_dst);
 		}
 
 		temp_dst++;
@@ -276,7 +276,7 @@ static void *smd_memcpy_to_fifo(void *dest, const void *src, size_t num_bytes,
 			ret = copy_from_user(temp_dst, temp_src, 1);
 			BUG_ON(ret != 0);
 		} else {
-			__raw_writeb_no_log(temp_src->u8, temp_dst);
+			__raw_writeb(temp_src->u8, temp_dst);
 		}
 
 		temp_src = (union fifo_mem *)((uintptr_t)temp_src + 1);
@@ -313,7 +313,7 @@ static void *smd_memcpy_from_fifo(void *dest, const void *src, size_t num_bytes,
 			ret = copy_to_user(temp_dst, temp_src, 1);
 			BUG_ON(ret != 0);
 		} else {
-			temp_dst->u8 = __raw_readb_no_log(temp_src);
+			temp_dst->u8 = __raw_readb(temp_src);
 		}
 
 		temp_src = (union fifo_mem *)((uintptr_t)temp_src + 1);
@@ -328,7 +328,7 @@ static void *smd_memcpy_from_fifo(void *dest, const void *src, size_t num_bytes,
 				sizeof(union fifo_mem));
 			BUG_ON(ret != 0);
 		} else {
-			temp_dst->u64 = __raw_readq_no_log(temp_src);
+			temp_dst->u64 = __raw_readq(temp_src);
 		}
 
 		temp_dst++;
@@ -342,7 +342,7 @@ static void *smd_memcpy_from_fifo(void *dest, const void *src, size_t num_bytes,
 			ret = copy_to_user(temp_dst, temp_src, 1);
 			BUG_ON(ret != 0);
 		} else {
-			temp_dst->u8 = __raw_readb_no_log(temp_src);
+			temp_dst->u8 = __raw_readb(temp_src);
 		}
 
 		temp_src = (union fifo_mem *)((uintptr_t)temp_src + 1);
@@ -385,7 +385,7 @@ static void *smd_memcpy32_to_fifo(void *dest, const void *src, size_t num_bytes,
 	num_bytes /= sizeof(uint32_t);
 
 	while (num_bytes--)
-		__raw_writel_no_log(*src_local++, dest_local++);
+		__raw_writel(*src_local++, dest_local++);
 
 	return dest;
 }
@@ -423,7 +423,7 @@ static void *smd_memcpy32_from_fifo(void *dest, const void *src,
 	num_bytes /= sizeof(uint32_t);
 
 	while (num_bytes--)
-		*dest_local++ = __raw_readl_no_log(src_local++);
+		*dest_local++ = __raw_readl(src_local++);
 
 	return dest;
 }

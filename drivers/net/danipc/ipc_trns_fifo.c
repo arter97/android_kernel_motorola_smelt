@@ -99,7 +99,7 @@ char *ipc_trns_fifo_buf_alloc(uint8_t dest_aid, enum ipc_trns_prio prio)
 		fifo_addr = IPC_FIFO_RD_OUT_LOW_ADDR(cpuid);
 	else
 		fifo_addr = IPC_FIFO_RD_OUT_HIGH_ADDR(cpuid);
-	buff_addr = __raw_readl_no_log((void *)fifo_addr);
+	buff_addr = __raw_readl((void *)fifo_addr);
 
 	return  (char *) ((buff_addr) ?
 				ipc_to_virt(cpuid, prio, buff_addr) : 0);
@@ -127,7 +127,7 @@ void ipc_trns_fifo_buf_free(char *ptr, uint8_t dest_aid,
 		else
 			fifo_addr = IPC_FIFO_WR_OUT_HIGH_ADDR(cpuid);
 
-		__raw_writel_no_log(virt_to_ipc(cpuid, prio, (void *)ptr),
+		__raw_writel(virt_to_ipc(cpuid, prio, (void *)ptr),
 					(void *)fifo_addr);
 	}
 }
@@ -151,7 +151,7 @@ int32_t ipc_trns_fifo_buf_send(char *ptr, uint8_t dest_aid,
 	else
 		fifo_addr = IPC_FIFO_WR_IN_HIGH_ADDR(cpuid);
 
-	__raw_writel_no_log(virt_to_ipc(cpuid, prio, (void *)ptr),
+	__raw_writel(virt_to_ipc(cpuid, prio, (void *)ptr),
 				(void *)fifo_addr);
 
 	return 0;
@@ -179,7 +179,7 @@ char *ipc_trns_fifo2eth_buf_alloc(
 		fifo_addr = IPC_FIFO_RD_OUT_LOW_ADDR(0);
 	else
 		fifo_addr = IPC_FIFO_RD_OUT_HIGH_ADDR(0);
-	buff_addr = __raw_readl_no_log((void *)fifo_addr);
+	buff_addr = __raw_readl((void *)fifo_addr);
 	return  (char *)buff_addr;
 }
 
@@ -203,7 +203,7 @@ void ipc_trns_fifo2eth_buf_free(char *ptr, uint8_t dest_aid,
 		else
 			fifo_addr = IPC_FIFO_WR_OUT_HIGH_ADDR(0);
 
-		__raw_writel_no_log((uint32_t)ptr, (void *)fifo_addr);
+		__raw_writel((uint32_t)ptr, (void *)fifo_addr);
 	}
 }
 
@@ -226,7 +226,7 @@ int32_t ipc_trns_fifo2eth_buf_send(char *ptr, uint8_t dest_aid,
 	else
 		fifo_addr = IPC_FIFO_WR_IN_HIGH_ADDR(0);
 
-	__raw_writel_no_log((uint32_t)ptr, (void *)fifo_addr);
+	__raw_writel((uint32_t)ptr, (void *)fifo_addr);
 
 	return 0;
 }
@@ -249,13 +249,13 @@ void ipc_trns_fifo_buf_init(uint8_t cpuid)
 
 	for (ix = 0; ix < IPC_FIFO_BUF_NUM_HIGH;
 			ix++, buf_addr += IPC_BUF_SIZE_MAX)
-		__raw_writel_no_log(buf_addr, (void *)fifo_addr);
+		__raw_writel(buf_addr, (void *)fifo_addr);
 
 	fifo_addr = IPC_FIFO_WR_OUT_LOW_ADDR(cpuid);
 
 	for (ix = 0; ix < IPC_FIFO_BUF_NUM_LOW;
 			ix++, buf_addr += IPC_BUF_SIZE_MAX)
-		__raw_writel_no_log(buf_addr, (void *)fifo_addr);
+		__raw_writel(buf_addr, (void *)fifo_addr);
 }
 
 
@@ -276,7 +276,7 @@ char *ipc_trns_fifo_buf_read(enum ipc_trns_prio prio)
 		fifo_addr = TCSR_IPC_FIFO_RD_IN_LOW_ADDR(cpuid);
 	else
 		fifo_addr = TCSR_IPC_FIFO_RD_IN_HIGH_ADDR(cpuid);
-	buff_addr = __raw_readl_no_log((void *)fifo_addr);
+	buff_addr = __raw_readl((void *)fifo_addr);
 
 	return  (char *)((buff_addr) ? ipc_to_virt(cpuid, prio, buff_addr) : 0);
 }

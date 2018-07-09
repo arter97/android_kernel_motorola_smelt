@@ -12,7 +12,6 @@
 #include <linux/smp.h>
 #include <linux/cpu.h>
 #include <linux/notifier.h>
-#include <linux/msm_rtb.h>
 #include <soc/qcom/spm.h>
 #include <soc/qcom/pm.h>
 #include <linux/irqchip/arm-gic.h>
@@ -123,11 +122,9 @@ static int hotplug_rtb_callback(struct notifier_block *nfb,
 
 	switch (action & (~CPU_TASKS_FROZEN)) {
 	case CPU_STARTING:
-		uncached_logk(LOGK_HOTPLUG, (void *)(cpudata | this_cpumask));
 		break;
 	case CPU_DYING:
 		cpumask_set_cpu((unsigned long)hcpu, &cpu_dying_mask);
-		uncached_logk(LOGK_HOTPLUG, (void *)(cpudata & ~this_cpumask));
 		break;
 	default:
 		break;

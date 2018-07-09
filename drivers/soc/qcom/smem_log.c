@@ -308,7 +308,7 @@ static void *memcpy_to_log(void *dest, const void *src, size_t num_bytes,
 			ret = copy_from_user(temp_dst, temp_src, 1);
 			BUG_ON(ret != 0);
 		} else {
-			__raw_writeb_no_log(temp_src->u8, temp_dst);
+			__raw_writeb(temp_src->u8, temp_dst);
 		}
 
 		temp_src = (union fifo_mem *)((uintptr_t)temp_src + 1);
@@ -323,7 +323,7 @@ static void *memcpy_to_log(void *dest, const void *src, size_t num_bytes,
 				sizeof(union fifo_mem));
 			BUG_ON(ret != 0);
 		} else {
-			__raw_writeq_no_log(temp_src->u64, temp_dst);
+			__raw_writeq(temp_src->u64, temp_dst);
 		}
 
 		temp_dst++;
@@ -337,7 +337,7 @@ static void *memcpy_to_log(void *dest, const void *src, size_t num_bytes,
 			ret = copy_from_user(temp_dst, temp_src, 1);
 			BUG_ON(ret != 0);
 		} else {
-			__raw_writeb_no_log(temp_src->u8, temp_dst);
+			__raw_writeb(temp_src->u8, temp_dst);
 		}
 
 		temp_src = (union fifo_mem *)((uintptr_t)temp_src + 1);

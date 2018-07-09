@@ -32,7 +32,7 @@ uint32_t msm_mpm_get_count(void)
 	if (!mpm_timer_base)
 		return 0;
 
-	count = __raw_readl_no_log(mpm_timer_base);
+	count = __raw_readl(mpm_timer_base);
 	pr_debug("mpm sclk sync:(%u)", count);
 	return count;
 }
