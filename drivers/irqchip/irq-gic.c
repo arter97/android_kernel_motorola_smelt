@@ -43,7 +43,6 @@
 #include <linux/irqchip/chained_irq.h>
 #include <linux/irqchip/arm-gic.h>
 #include <linux/syscore_ops.h>
-#include <linux/msm_rtb.h>
 
 #include <asm/irq.h>
 #include <asm/exception.h>
@@ -471,7 +470,6 @@ static asmlinkage void __exception_irq_entry gic_handle_irq(struct pt_regs *regs
 		if (likely(irqnr > 15 && irqnr < 1021)) {
 			irqnr = irq_find_mapping(gic->domain, irqnr);
 			handle_IRQ(irqnr, regs);
-			uncached_logk(LOGK_IRQ, (void *)(uintptr_t)irqnr);
 			continue;
 		}
 		if (irqnr < 16) {
@@ -479,7 +477,6 @@ static asmlinkage void __exception_irq_entry gic_handle_irq(struct pt_regs *regs
 #ifdef CONFIG_SMP
 			handle_IPI(irqnr, regs);
 #endif
-			uncached_logk(LOGK_IRQ, (void *)(uintptr_t)irqnr);
 			continue;
 		}
 		break;
