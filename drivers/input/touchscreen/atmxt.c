@@ -333,8 +333,6 @@ static int atmxt_probe(struct i2c_client *client,
 			goto atmxt_free_irq;
 	}
 
-	wake_lock_init(&dd->timed_lock, WAKE_LOCK_SUSPEND, "atmxt-timed-lock");
-
 	err = atmxt_create_sysfs_files(dd);
 	if (err < 0) {
 		printk(KERN_ERR
@@ -377,10 +375,6 @@ static int atmxt_remove(struct i2c_client *client)
 
 	dd = i2c_get_clientdata(client);
 	if (dd != NULL) {
-		if (wake_lock_active(&dd->timed_lock))
-			wake_unlock(&dd->timed_lock);
-
-		wake_lock_destroy(&dd->timed_lock);
 		free_irq(dd->client->irq, dd);
 #ifdef CONFIG_MFD_M4SENSORHUB
 		if (!dd->enable_at_boot)
@@ -2647,9 +2641,6 @@ static __always_inline void atmxt_report_touches(struct atmxt_driver_data *dd)
 		notify_display_wakeup(TOUCH);
 #endif /* CONFIG_WAKEUP_SOURCE_NOTIFY */
 
-	/* Hold to allow events time to propagate up */
-	wake_lock_timeout(&dd->timed_lock, 0.5 * HZ);
-
 	return;
 }
 
@@ -2846,8 +2837,6 @@ static __always_inline int atmxt_message_handler42(struct atmxt_driver_data *dd,
 		input_report_key(dd->in_dev, KEY_SLEEP, 0);
 	}
 
-	/* Hold to allow events time to propagate up */
-	wake_lock_timeout(&dd->timed_lock, 0.5 * HZ);
 	input_sync(dd->in_dev);
 
 atmxt_message_handler42_fail:
