@@ -113,7 +113,7 @@ static int atmxt_force_bootloader(struct atmxt_driver_data *dd);
 static bool atmxt_check_firmware_update(struct atmxt_driver_data *dd);
 static int atmxt_validate_firmware(uint8_t *data, uint32_t size);
 static int atmxt_flash_firmware(struct atmxt_driver_data *dd);
-static inline char *atmxt_msg2str(const uint8_t *msg, uint8_t size);
+// static inline char *atmxt_msg2str(const uint8_t *msg, uint8_t size);
 static bool atmxt_wait4irq(struct atmxt_driver_data *dd);
 static int atmxt_create_sysfs_files(struct atmxt_driver_data *dd);
 static void atmxt_remove_sysfs_files(struct atmxt_driver_data *dd);
@@ -1785,7 +1785,6 @@ static int atmxt_check_settings(struct atmxt_driver_data *dd, bool *reset)
 {
 	int err = 0;
 	uint8_t *msg_buf = NULL;
-	char *contents = NULL;
 
 	atmxt_dbg(dd, ATMXT_DBG3, "%s: Checking IC settings...\n", __func__);
 
@@ -1827,20 +1826,17 @@ static int atmxt_check_settings(struct atmxt_driver_data *dd, bool *reset)
 					msg_buf[1]);
 			}
 		} else {
-			contents = atmxt_msg2str(msg_buf,
-				dd->data->max_msg_size);
-			printk(KERN_ERR "%s: %s--%s %u instead:  %s.\n",
+			printk(KERN_ERR "%s: %s--%s %u\n",
 				__func__, "Failed to receive reset message",
 				"received this from Object",
-				dd->info_blk->msg_id[msg_buf[0]], contents);
+				dd->info_blk->msg_id[msg_buf[0]]);
 			err = -EIO;
 			goto atmxt_check_settings_fail;
 		}
 	} else {
-		contents = atmxt_msg2str(msg_buf, dd->data->max_msg_size);
-		printk(KERN_ERR "%s: %s--%s:  %s.\n",
+		printk(KERN_ERR "%s: %s--%s.\n",
 			__func__, "Failed to receive reset message",
-			"received unknown message instead", contents);
+			"received unknown message instead");
 		err = -EIO;
 		goto atmxt_check_settings_fail;
 	}
@@ -1882,7 +1878,6 @@ static int atmxt_check_settings(struct atmxt_driver_data *dd, bool *reset)
 
 atmxt_check_settings_fail:
 	kfree(msg_buf);
-	kfree(contents);
 	return err;
 }
 
@@ -2040,9 +2035,9 @@ static inline int atmxt_i2c_write(struct atmxt_driver_data *dd,
 #ifdef CONFIG_TOUCHSCREEN_DEBUG
 	if ((dd->dbg->dbg_lvl) >= ATMXT_DBG2)
 		str = atmxt_msg2str(data_out, size_out);
-#endif
 	atmxt_dbg(dd, ATMXT_DBG2, "%s: %s\n", __func__, str);
 	kfree(str);
+#endif
 
 atmxt_i2c_write_exit:
 	kfree(data_out);
@@ -2080,9 +2075,9 @@ static inline int atmxt_i2c_read(struct atmxt_driver_data *dd, uint8_t *buf, int
 #ifdef CONFIG_TOUCHSCREEN_DEBUG
 	if ((dd->dbg->dbg_lvl) >= ATMXT_DBG1)
 		str = atmxt_msg2str(buf, size);
-#endif
 	atmxt_dbg(dd, ATMXT_DBG1, "%s: %s\n", __func__, str);
 	kfree(str);
+#endif
 
 	return err;
 }
@@ -2405,7 +2400,6 @@ static inline void atmxt_active_handler(struct atmxt_driver_data *dd)
 	int i = 0;
 	uint8_t *msg_buf = NULL;
 	int size = 0;
-	char *contents = NULL;
 	bool msg_fail = false;
 	int last_err = 0;
 	int msg_size = 0;
@@ -2447,9 +2441,8 @@ static inline void atmxt_active_handler(struct atmxt_driver_data *dd)
 	}
 
 	if (msg_buf[0] == 0xFF) {
-		contents = atmxt_msg2str(msg_buf, size);
-		printk(KERN_ERR "%s: Received invalid data:  %s.\n",
-			__func__, contents);
+		printk(KERN_ERR "%s: Received invalid data\n",
+			__func__);
 		err = -EINVAL;
 		goto atmxt_active_handler_fail;
 	}
@@ -2527,7 +2520,6 @@ atmxt_active_handler_fail:
 
 atmxt_active_handler_pass:
 	kfree(msg_buf);
-	kfree(contents);
 	return;
 }
 
@@ -2535,7 +2527,6 @@ static inline int atmxt_process_message(struct atmxt_driver_data *dd,
 		uint8_t *msg, uint8_t size)
 {
 	int err = 0;
-	char *contents = NULL;
 
 	if (msg[0] <= (dd->info_blk->id_size-1)) {
 		switch (dd->info_blk->msg_id[msg[0]]) {
@@ -2550,22 +2541,18 @@ static inline int atmxt_process_message(struct atmxt_driver_data *dd,
 				err = atmxt_message_handler42(dd, msg, size);
 			break;
 		default:
-			contents = atmxt_msg2str(msg, size);
-			printk(KERN_ERR "%s: Object %u sent this:  %s.\n",
-				__func__, dd->info_blk->msg_id[msg[0]],
-				contents);
+			printk(KERN_ERR "%s: Object %u sent unrecognized message\n",
+				__func__, dd->info_blk->msg_id[msg[0]]);
 			break;
 		}
 	} else {
-		contents = atmxt_msg2str(msg, size);
-		printk(KERN_ERR "%s: Received unknown message:  %s.\n",
-			__func__, contents);
+		printk(KERN_ERR "%s: Received unknown message\n",
+			__func__);
 	}
 
 	if (err < 0)
 		printk(KERN_ERR "%s: Message processing failed.\n", __func__);
 
-	kfree(contents);
 	return err;
 }
 
@@ -3197,6 +3184,7 @@ atmxt_flash_firmware_fail:
 	return err;
 }
 
+#if 0
 static inline char *atmxt_msg2str(const uint8_t *msg, uint8_t size)
 {
 	char *str = NULL;
@@ -3224,6 +3212,7 @@ static inline char *atmxt_msg2str(const uint8_t *msg, uint8_t size)
 atmxt_msg2str_exit:
 	return str;
 }
+#endif
 
 static bool atmxt_wait4irq(struct atmxt_driver_data *dd)
 {
