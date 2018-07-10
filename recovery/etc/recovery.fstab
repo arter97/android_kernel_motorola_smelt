@@ -1,8 +1,8 @@
 # mount point	fstype		device			[device2]
 
-/system		f2fs	/dev/block/platform/msm_sdcc.1/by-name/system
-/cache		f2fs	/dev/block/platform/msm_sdcc.1/by-name/cache
-/data		f2fs	/dev/block/platform/msm_sdcc.1/by-name/userdata
+/system		ext4	/dev/block/platform/msm_sdcc.1/by-name/system
+/cache		ext4	/dev/block/platform/msm_sdcc.1/by-name/cache
+/data		ext4	/dev/block/platform/msm_sdcc.1/by-name/userdata
 /boot		emmc	/dev/block/platform/msm_sdcc.1/by-name/boot
 /recovery	emmc	/dev/block/platform/msm_sdcc.1/by-name/recovery
 /misc		emmc	/dev/block/platform/msm_sdcc.1/by-name/misc
