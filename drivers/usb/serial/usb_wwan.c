@@ -229,7 +229,7 @@ int usb_wwan_write(struct tty_struct *tty, struct usb_serial_port *port,
 
 		err = usb_autopm_get_interface_async(port->serial->interface);
 		if (err < 0)
-			break;
+			break;z
 
 		/* send the data */
 		memcpy(this_urb->transfer_buffer, buf, todo);
