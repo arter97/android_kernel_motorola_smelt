@@ -1489,8 +1489,6 @@ static irqreturn_t atmxt_isr(int irq, void *handle)
 	int drv_state;
 	int ic_state;
 
-	mutex_lock(dd->mutex);
-
 	drv_state = atmxt_get_drv_state(dd);
 	ic_state = atmxt_get_ic_state(dd);
 
@@ -1553,7 +1551,6 @@ static irqreturn_t atmxt_isr(int irq, void *handle)
 	}
 
 	atmxt_dbg(dd, ATMXT_DBG3, "%s: IRQ Serviced.\n", __func__);
-	mutex_unlock(dd->mutex);
 
 	return IRQ_HANDLED;
 }
