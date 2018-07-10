@@ -55,12 +55,12 @@ static int atmxt_init(void);
 static void atmxt_exit(void);
 static void atmxt_free(struct atmxt_driver_data *dd);
 static void atmxt_free_ic_data(struct atmxt_driver_data *dd);
-static void atmxt_set_drv_state(struct atmxt_driver_data *dd,
+static inline void atmxt_set_drv_state(struct atmxt_driver_data *dd,
 		enum atmxt_driver_state state);
-static int atmxt_get_drv_state(struct atmxt_driver_data *dd);
-static void atmxt_set_ic_state(struct atmxt_driver_data *dd,
+static inline int atmxt_get_drv_state(struct atmxt_driver_data *dd);
+static inline void atmxt_set_ic_state(struct atmxt_driver_data *dd,
 		enum atmxt_ic_state state);
-static int atmxt_get_ic_state(struct atmxt_driver_data *dd);
+static inline int atmxt_get_ic_state(struct atmxt_driver_data *dd);
 static int atmxt_verify_pdata(struct atmxt_driver_data *dd);
 static int atmxt_request_tdat(struct atmxt_driver_data *dd);
 static void atmxt_tdat_callback(const struct firmware *tdat, void *context);
@@ -84,9 +84,9 @@ static int atmxt_send_settings(struct atmxt_driver_data *dd, bool save_nvm);
 static int atmxt_start_ic_calibration_fix(struct atmxt_driver_data *dd);
 static int atmxt_verify_ic_calibration_fix(struct atmxt_driver_data *dd);
 static int atmxt_stop_ic_calibration_fix(struct atmxt_driver_data *dd);
-static int atmxt_i2c_write(struct atmxt_driver_data *dd,
+static inline int atmxt_i2c_write(struct atmxt_driver_data *dd,
 		uint8_t addr_lo, uint8_t addr_hi, uint8_t *buf, int size);
-static int atmxt_i2c_read(struct atmxt_driver_data *dd, uint8_t *buf, int size);
+static inline int atmxt_i2c_read(struct atmxt_driver_data *dd, uint8_t *buf, int size);
 static int atmxt_save_internal_data(struct atmxt_driver_data *dd);
 static int atmxt_save_data5(struct atmxt_driver_data *dd, uint8_t *entry);
 static int atmxt_save_data6(struct atmxt_driver_data *dd, uint8_t *entry);
@@ -97,23 +97,23 @@ static int atmxt_save_data9(struct atmxt_driver_data *dd,
 static void atmxt_compute_checksum(struct atmxt_driver_data *dd);
 static void atmxt_compute_partial_checksum(uint8_t *byte1, uint8_t *byte2,
 		uint8_t *low, uint8_t *mid, uint8_t *high);
-static void atmxt_active_handler(struct atmxt_driver_data *dd);
-static int atmxt_process_message(struct atmxt_driver_data *dd,
+static inline void atmxt_active_handler(struct atmxt_driver_data *dd);
+static inline int atmxt_process_message(struct atmxt_driver_data *dd,
 		uint8_t *msg, uint8_t size);
-static void atmxt_report_touches(struct atmxt_driver_data *dd);
+static __always_inline void atmxt_report_touches(struct atmxt_driver_data *dd);
 static void atmxt_release_touches(struct atmxt_driver_data *dd);
-static int atmxt_message_handler6(struct atmxt_driver_data *dd,
+static __always_inline int atmxt_message_handler6(struct atmxt_driver_data *dd,
 		uint8_t *msg, uint8_t size);
-static int atmxt_message_handler9(struct atmxt_driver_data *dd,
+static __always_inline int atmxt_message_handler9(struct atmxt_driver_data *dd,
 		uint8_t *msg, uint8_t size);
-static int atmxt_message_handler42(struct atmxt_driver_data *dd,
+static __always_inline int atmxt_message_handler42(struct atmxt_driver_data *dd,
 		uint8_t *msg, uint8_t size);
 static int atmxt_resume_restart(struct atmxt_driver_data *dd);
 static int atmxt_force_bootloader(struct atmxt_driver_data *dd);
 static bool atmxt_check_firmware_update(struct atmxt_driver_data *dd);
 static int atmxt_validate_firmware(uint8_t *data, uint32_t size);
 static int atmxt_flash_firmware(struct atmxt_driver_data *dd);
-static char *atmxt_msg2str(const uint8_t *msg, uint8_t size);
+static inline char *atmxt_msg2str(const uint8_t *msg, uint8_t size);
 static bool atmxt_wait4irq(struct atmxt_driver_data *dd);
 static int atmxt_create_sysfs_files(struct atmxt_driver_data *dd);
 static void atmxt_remove_sysfs_files(struct atmxt_driver_data *dd);
@@ -750,7 +750,7 @@ static void atmxt_free_ic_data(struct atmxt_driver_data *dd)
 	return;
 }
 
-static void atmxt_set_drv_state(struct atmxt_driver_data *dd,
+static inline void atmxt_set_drv_state(struct atmxt_driver_data *dd,
 		enum atmxt_driver_state state)
 {
 	printk(KERN_INFO "%s: Driver state %s -> %s\n", __func__,
@@ -760,12 +760,12 @@ static void atmxt_set_drv_state(struct atmxt_driver_data *dd,
 	return;
 }
 
-static int atmxt_get_drv_state(struct atmxt_driver_data *dd)
+static inline int atmxt_get_drv_state(struct atmxt_driver_data *dd)
 {
 	return dd->drv_stat;
 }
 
-static void atmxt_set_ic_state(struct atmxt_driver_data *dd,
+static inline void atmxt_set_ic_state(struct atmxt_driver_data *dd,
 		enum atmxt_ic_state state)
 {
 	printk(KERN_INFO "%s: IC state %s -> %s\n", __func__,
@@ -775,7 +775,7 @@ static void atmxt_set_ic_state(struct atmxt_driver_data *dd,
 	return;
 }
 
-static int atmxt_get_ic_state(struct atmxt_driver_data *dd)
+static inline int atmxt_get_ic_state(struct atmxt_driver_data *dd)
 {
 	return dd->ic_stat;
 }
@@ -1993,7 +1993,7 @@ atmxt_stop_ic_calibration_fix_fail:
 	return err;
 }
 
-static int atmxt_i2c_write(struct atmxt_driver_data *dd,
+static inline int atmxt_i2c_write(struct atmxt_driver_data *dd,
 		uint8_t addr_lo, uint8_t addr_hi, uint8_t *buf, int size)
 {
 	int err = 0;
@@ -2053,7 +2053,7 @@ atmxt_i2c_write_exit:
 	return err;
 }
 
-static int atmxt_i2c_read(struct atmxt_driver_data *dd, uint8_t *buf, int size)
+static inline int atmxt_i2c_read(struct atmxt_driver_data *dd, uint8_t *buf, int size)
 {
 	int err = 0;
 	int i = 0;
@@ -2402,7 +2402,7 @@ static void atmxt_compute_partial_checksum(uint8_t *byte1, uint8_t *byte2,
 	return;
 }
 
-static void atmxt_active_handler(struct atmxt_driver_data *dd)
+static inline void atmxt_active_handler(struct atmxt_driver_data *dd)
 {
 	int err = 0;
 	int i = 0;
@@ -2534,7 +2534,7 @@ atmxt_active_handler_pass:
 	return;
 }
 
-static int atmxt_process_message(struct atmxt_driver_data *dd,
+static inline int atmxt_process_message(struct atmxt_driver_data *dd,
 		uint8_t *msg, uint8_t size)
 {
 	int err = 0;
@@ -2572,7 +2572,7 @@ static int atmxt_process_message(struct atmxt_driver_data *dd,
 	return err;
 }
 
-static void atmxt_report_touches(struct atmxt_driver_data *dd)
+static __always_inline void atmxt_report_touches(struct atmxt_driver_data *dd)
 {
 	int i = 0;
 	int j = 0;
@@ -2708,7 +2708,7 @@ static void atmxt_release_touches(struct atmxt_driver_data *dd)
 	return;
 }
 
-static int atmxt_message_handler6(struct atmxt_driver_data *dd,
+static __always_inline int atmxt_message_handler6(struct atmxt_driver_data *dd,
 		uint8_t *msg, uint8_t size)
 {
 	int err = 0;
@@ -2802,7 +2802,7 @@ atmxt_message_handler6_fail:
 	return err;
 }
 
-static int atmxt_message_handler9(struct atmxt_driver_data *dd,
+static __always_inline int atmxt_message_handler9(struct atmxt_driver_data *dd,
 		uint8_t *msg, uint8_t size)
 {
 	int err = 0;
@@ -2864,7 +2864,7 @@ atmxt_message_handler9_fail:
 	return err;
 }
 
-static int atmxt_message_handler42(struct atmxt_driver_data *dd,
+static __always_inline int atmxt_message_handler42(struct atmxt_driver_data *dd,
 		uint8_t *msg, uint8_t size)
 {
 	int err = 0;
@@ -3200,7 +3200,7 @@ atmxt_flash_firmware_fail:
 	return err;
 }
 
-static char *atmxt_msg2str(const uint8_t *msg, uint8_t size)
+static inline char *atmxt_msg2str(const uint8_t *msg, uint8_t size)
 {
 	char *str = NULL;
 	int i = 0;
