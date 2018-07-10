@@ -25,6 +25,8 @@
 #include "smp2p_private_api.h"
 #include "smp2p_private.h"
 
+#include "smp2p_loopback.c"
+
 #define NUM_LOG_PAGES 3
 
 /**
