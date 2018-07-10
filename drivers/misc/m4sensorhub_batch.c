@@ -32,7 +32,6 @@
 #include <linux/uaccess.h>
 #include <linux/slab.h>
 
-#define U32_MAX ((u32)(~0U))
 #define m4sensorhub_batch_DRIVER_NAME	"m4sensorhub_batch"
 
 #define DATA_SIZE_IN_BITS  (sizeof(struct m4sensorhub_batch_data) * 8)

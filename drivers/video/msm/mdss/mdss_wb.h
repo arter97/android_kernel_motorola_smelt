@@ -22,6 +22,4 @@ struct mdss_wb_ctrl {
 	struct switch_dev sdev;
 };
 
-#define AT_VECTOR_SIZE_ARCH 1 /* entries in ARCH_DLINFO */
-
 #endif
