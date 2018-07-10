@@ -207,7 +207,7 @@ service utag_sync /system/bin/utag_sync
 on property:sys.boot_completed=1
     start utag_sync
 
-service chargeonlymode /sbin/charge_only_mode
+service chargeonlymode /system/bin/charge_only_mode
     class charger
     seclabel u:r:chargeonlymode:s0
 
