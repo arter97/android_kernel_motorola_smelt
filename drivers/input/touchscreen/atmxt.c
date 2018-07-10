@@ -1989,7 +1989,7 @@ static inline int atmxt_i2c_write(struct atmxt_driver_data *dd,
 		uint8_t addr_lo, uint8_t addr_hi, uint8_t *buf, int size)
 {
 	int err = 0;
-	uint8_t *data_out = NULL;
+	uint8_t data_out[8];
 	int size_out = 0;
 	int i = 0;
 	char *str = NULL;
@@ -1997,13 +1997,6 @@ static inline int atmxt_i2c_write(struct atmxt_driver_data *dd,
 	dd->status = dd->status & ~(1 << ATMXT_SET_MESSAGE_POINTER);
 
 	size_out = size + 2;
-	data_out = kzalloc(sizeof(uint8_t) * size_out, GFP_KERNEL);
-	if (data_out == NULL) {
-		printk(KERN_ERR "%s: Unable to allocate write memory.\n",
-			__func__);
-		err = -ENOMEM;
-		goto atmxt_i2c_write_exit;
-	}
 
 	data_out[0] = addr_lo;
 	data_out[1] = addr_hi;
@@ -2038,9 +2031,6 @@ static inline int atmxt_i2c_write(struct atmxt_driver_data *dd,
 	atmxt_dbg(dd, ATMXT_DBG2, "%s: %s\n", __func__, str);
 	kfree(str);
 #endif
-
-atmxt_i2c_write_exit:
-	kfree(data_out);
 
 	return err;
 }
@@ -2398,7 +2388,7 @@ static inline void atmxt_active_handler(struct atmxt_driver_data *dd)
 {
 	int err = 0;
 	int i = 0;
-	uint8_t *msg_buf = NULL;
+	uint8_t msg_buf[32];
 	int size = 0;
 	bool msg_fail = false;
 	int last_err = 0;
@@ -2411,15 +2401,6 @@ static inline void atmxt_active_handler(struct atmxt_driver_data *dd)
 	size = (dd->rdat->active_touches + 1) * msg_size;
 	if (size == msg_size)
 		size = msg_size * 2;
-
-	msg_buf = kzalloc(sizeof(uint8_t) * size, GFP_KERNEL);
-	if (msg_buf == NULL) {
-		printk(KERN_ERR
-			"%s: Unable to allocate memory for message buffer.\n",
-			__func__);
-		err = -ENOMEM;
-		goto atmxt_active_handler_fail;
-	}
 
 	if (!(dd->status & (1 << ATMXT_SET_MESSAGE_POINTER))) {
 		err = atmxt_i2c_write(dd, dd->addr->msg[0], dd->addr->msg[1],
@@ -2489,7 +2470,7 @@ static inline void atmxt_active_handler(struct atmxt_driver_data *dd)
 			err = last_err;
 			goto atmxt_active_handler_fail;
 		} else {
-			goto atmxt_active_handler_pass;
+			return;
 		}
 	}
 
@@ -2509,17 +2490,12 @@ static inline void atmxt_active_handler(struct atmxt_driver_data *dd)
 
 	if (msg_fail) {
 		err = last_err;
-		goto atmxt_active_handler_fail;
-	}
-
-	goto atmxt_active_handler_pass;
 
 atmxt_active_handler_fail:
-	printk(KERN_ERR "%s: Touch active handler failed with error code %d.\n",
-		__func__, err);
+		printk(KERN_ERR "%s: Touch active handler failed with error code %d.\n",
+			__func__, err);
+	}
 
-atmxt_active_handler_pass:
-	kfree(msg_buf);
 	return;
 }
 
