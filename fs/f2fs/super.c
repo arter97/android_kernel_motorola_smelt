@@ -3231,7 +3231,6 @@ free_filesystem:
 	unregister_filesystem(&f2fs_fs_type);
 free_shrinker:
 	unregister_shrinker(&f2fs_shrinker_info);
-free_sysfs:
 	f2fs_exit_sysfs();
 free_extent_cache:
 	f2fs_destroy_extent_cache();
