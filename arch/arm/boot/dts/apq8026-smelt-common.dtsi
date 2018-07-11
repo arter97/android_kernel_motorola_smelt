@@ -232,6 +232,7 @@
 		qcom,msm-bus,vectors-KBps =
 			<86 512 0 0>,
 			<86 512 500 800>;
+		status = "disabled";
 	};
 
 	/* BLSP2: I2C */
@@ -296,6 +297,7 @@
 		qcom,msm-bus,vectors-KBps =
 			<86 512 0 0>,
 			<86 512 500 800>;
+		status = "disabled";
 	};
 
 	qcom,wcnss-wlan@fb000000 {
