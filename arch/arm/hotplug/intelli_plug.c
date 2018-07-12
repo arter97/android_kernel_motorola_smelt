@@ -26,9 +26,6 @@
 #include <linux/cpufreq.h>
 #include <linux/fb.h>
 
-#define INTELLI_PLUG_MAJOR_VERSION	4
-#define INTELLI_PLUG_MINOR_VERSION	0
-
 #define DEF_SAMPLING_MS			(268)
 
 #define DUAL_PERSISTENCE		(2500 / DEF_SAMPLING_MS)
@@ -561,10 +558,6 @@ int __init intelli_plug_init(void)
 	int rc;
 	struct cpufreq_policy *policy;
 	struct ip_cpu_info *l_ip_info;
-
-	pr_info("intelli_plug: version %d.%d by faux123\n",
-		 INTELLI_PLUG_MAJOR_VERSION,
-		 INTELLI_PLUG_MINOR_VERSION);
 
 	l_ip_info = &per_cpu(ip_info, 0);
 	policy = cpufreq_cpu_get(0);
