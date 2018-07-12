@@ -39,16 +39,9 @@ on init
   chmod 0444 /sys/devices/0.bq5105x-ctrl/chg_term/value
 
 on charger
-  write /sys/module/intelli_plug/parameters/enabled 0
-
   write /sys/devices/system/cpu/cpu1/online 0
   write /sys/devices/system/cpu/cpu2/online 0
   write /sys/devices/system/cpu/cpu3/online 0
-
-  write /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq 787200
-  write /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq 787200
-  write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor userspace
-  write /sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed 787200
 
 on boot
   chown bluetooth bluetooth /sys/class/rfkill/rfkill0/type
@@ -172,20 +165,9 @@ service mmi-boot-sh /system/bin/init.mmi.boot.sh
   group root log
   oneshot
 
-on property:ro.boot.thermal_limit=1
-  write /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq 787200
-  write /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq 787200
-  write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor userspace
-  write /sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed 787200
-
 on property:sys.boot_completed=1
   write /sys/module/intelli_plug/parameters/enabled 1
   write /sys/module/intelli_plug/parameters/touch_boost 1
-
-  write /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq 787200
-  write /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq 787200
-  write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor userspace
-  write /sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed 787200
 
   chmod 0644 /sys/devices/0.bq5105x-ctrl/chg_n/value
   chmod 0644 /sys/devices/0.bq5105x-ctrl/chg_rate/value
@@ -249,6 +231,13 @@ service iprenew_wlan0 /system/bin/dhcpcd -n
     oneshot
 
 on early-init
+    write /sys/module/intelli_plug/parameters/enabled 0
+
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq 787200
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq 787200
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor userspace
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed 787200
+
     mount debugfs debugfs /sys/kernel/debug mode=755
     # Exporting GPIO2 and GPIO3
     write /sys/class/gpio/export 2
