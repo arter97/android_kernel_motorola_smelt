@@ -13,6 +13,9 @@
  * GNU General Public License for more details.
  *
  */
+
+#define DEBUG
+
 #include <linux/workqueue.h>
 #include <linux/cpu.h>
 #include <linux/sched.h>
@@ -22,8 +25,6 @@
 #include <linux/input.h>
 #include <linux/cpufreq.h>
 #include <linux/fb.h>
-
-// #define DEBUG
 
 #define INTELLI_PLUG_MAJOR_VERSION	4
 #define INTELLI_PLUG_MINOR_VERSION	0
