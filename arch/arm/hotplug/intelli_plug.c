@@ -45,17 +45,56 @@ static struct delayed_work intelli_plug_boost;
 static struct workqueue_struct *intelliplug_wq;
 static struct workqueue_struct *intelliplug_boost_wq;
 
-static __read_mostly unsigned int intelli_plug_active = 0;
-module_param(intelli_plug_active, uint, 0664);
-
-static __read_mostly unsigned int touch_boost_active = 0;
-module_param(touch_boost_active, uint, 0664);
-
+static __read_mostly bool enabled = false;
+static __read_mostly bool boost = false;
+static __read_mostly bool touch_boost = false;
 static __read_mostly unsigned int nr_run_profile_sel = 0;
-module_param(nr_run_profile_sel, uint, 0664);
 
 //default to something sane rather than zero
 static __read_mostly unsigned int sampling_time = DEF_SAMPLING_MS;
+
+static int param_set_enabled(const char *val,
+			const struct kernel_param *kp)
+{
+	int ret = param_set_bool(val, kp);
+
+	queue_delayed_work_on(0, intelliplug_wq, &intelli_plug_work,
+		msecs_to_jiffies(sampling_time));
+
+	return ret;
+}
+
+static const struct kernel_param_ops enabled_param_ops = {
+	.set = param_set_enabled,
+	.get = param_get_bool,
+};
+
+static void __ref intelli_plug_perf_boost(bool on);
+static int param_set_boost(const char *val,
+			const struct kernel_param *kp)
+{
+	int input, ret;
+
+	ret = kstrtoint(val, 10, &input);
+	if (ret || (input != 0 && input != 1))
+		return -EINVAL;
+
+	ret = param_set_bool(val, kp);
+
+	intelli_plug_perf_boost(input == 0 ? false : true);
+
+	return ret;
+}
+
+static const struct kernel_param_ops boost_param_ops = {
+	.set = param_set_enabled,
+	.get = param_get_bool,
+};
+
+module_param_cb(enabled, &enabled_param_ops, &enabled, 0664);
+module_param_cb(boost, &boost_param_ops, &boost, 0664);
+module_param(touch_boost, bool, 0664);
+module_param(nr_run_profile_sel, uint, 0664);
 
 static int persist_count = 0;
 
@@ -191,8 +230,8 @@ static void __ref intelli_plug_boost_fn(struct work_struct *work)
 
 	int nr_cpus = num_online_cpus();
 
-	if (intelli_plug_active)
-		if (touch_boost_active)
+	if (enabled)
+		if (touch_boost)
 			if (nr_cpus < 2)
 				cpu_up(1);
 }
@@ -243,66 +282,66 @@ static void __ref intelli_plug_work_fn(struct work_struct *work)
 
 	int i;
 
-	if (intelli_plug_active) {
+	pr_debug("enabled: %d, boost: %d, suspended: %d\n",
+	    enabled ? 1 : 0, boost ? 1 : 0, suspended ? 1 : 0);
+
+	if (enabled && !boost && !suspended) {
 		nr_run_stat = calculate_thread_stats();
 		update_per_cpu_stat();
 		pr_debug("nr_run_stat: %u\n", nr_run_stat);
 		cpu_count = nr_run_stat;
 		nr_cpus = num_online_cpus();
 
-		if (!suspended) {
+		if (persist_count > 0)
+			persist_count--;
 
-			if (persist_count > 0)
-				persist_count--;
-
-			switch (cpu_count) {
-			case 1:
-				if (persist_count == 0) {
-					//take down everyone
-					unplug_cpu(0);
-				}
-				pr_debug("case 1: %u\n", persist_count);
-				break;
-			case 2:
-				if (persist_count == 0)
-					persist_count = DUAL_PERSISTENCE;
-				if (nr_cpus < 2) {
-					for (i = 1; i < cpu_count; i++)
-						cpu_up(i);
-				} else {
-					unplug_cpu(1);
-				}
-				pr_debug("case 2: %u\n", persist_count);
-				break;
-			case 3:
-				if (persist_count == 0)
-					persist_count = TRI_PERSISTENCE;
-				if (nr_cpus < 3) {
-					for (i = 1; i < cpu_count; i++)
-						cpu_up(i);
-				} else {
-					unplug_cpu(2);
-				}
-				pr_debug("case 3: %u\n", persist_count);
-				break;
-			case 4:
-				if (persist_count == 0)
-					persist_count = QUAD_PERSISTENCE;
-				if (nr_cpus < 4)
-					for (i = 1; i < cpu_count; i++)
-						cpu_up(i);
-				pr_debug("case 4: %u\n", persist_count);
-				break;
-			default:
-				pr_err("Run Stat Error: Bad value %u\n", nr_run_stat);
-				break;
+		switch (cpu_count) {
+		case 1:
+			if (persist_count == 0) {
+				//take down everyone
+				unplug_cpu(0);
 			}
+			pr_debug("case 1: %u\n", persist_count);
+			break;
+		case 2:
+			if (persist_count == 0)
+				persist_count = DUAL_PERSISTENCE;
+			if (nr_cpus < 2) {
+				for (i = 1; i < cpu_count; i++)
+					cpu_up(i);
+			} else {
+				unplug_cpu(1);
+			}
+			pr_debug("case 2: %u\n", persist_count);
+			break;
+		case 3:
+			if (persist_count == 0)
+				persist_count = TRI_PERSISTENCE;
+			if (nr_cpus < 3) {
+				for (i = 1; i < cpu_count; i++)
+					cpu_up(i);
+			} else {
+				unplug_cpu(2);
+			}
+			pr_debug("case 3: %u\n", persist_count);
+			break;
+		case 4:
+			if (persist_count == 0)
+				persist_count = QUAD_PERSISTENCE;
+			if (nr_cpus < 4)
+				for (i = 1; i < cpu_count; i++)
+					cpu_up(i);
+			pr_debug("case 4: %u\n", persist_count);
+			break;
+		default:
+			pr_err("Run Stat Error: Bad value %u\n", nr_run_stat);
+			break;
 		}
-		else
-			pr_debug("intelli_plug is suspened!\n");
+		queue_delayed_work_on(0, intelliplug_wq, &intelli_plug_work,
+			msecs_to_jiffies(sampling_time));
+	} else {
+		pr_debug("intelli_plug is not active!\n");
 	}
-	queue_delayed_work_on(0, intelliplug_wq, &intelli_plug_work,
-		msecs_to_jiffies(sampling_time));
 }
 
 static void screen_off_limit(bool on)
@@ -344,7 +383,7 @@ static void __ref intelli_plug_perf_boost(bool on)
 {
 	unsigned int cpu;
 
-	if (intelli_plug_active) {
+	if (enabled) {
 		flush_workqueue(intelliplug_wq);
 		if (on) {
 			for_each_possible_cpu(cpu) {
@@ -359,48 +398,9 @@ static void __ref intelli_plug_perf_boost(bool on)
 	}
 }
 
-/* sysfs interface for performance boost (BEGIN) */
-static ssize_t intelli_plug_perf_boost_store(struct kobject *kobj,
-			struct kobj_attribute *attr, const char *buf,
-			size_t count)
-{
-
-	int boost_req;
-
-	sscanf(buf, "%du", &boost_req);
-
-	switch(boost_req) {
-		case 0:
-			intelli_plug_perf_boost(0);
-			return count;
-		case 1:
-			intelli_plug_perf_boost(1);
-			return count;
-		default:
-			return -EINVAL;
-	}
-}
-
-static struct kobj_attribute intelli_plug_perf_boost_attribute =
-	__ATTR(perf_boost, 0220,
-		NULL,
-		intelli_plug_perf_boost_store);
-
-static struct attribute *intelli_plug_perf_boost_attrs[] = {
-	&intelli_plug_perf_boost_attribute.attr,
-	NULL,
-};
-
-static struct attribute_group intelli_plug_perf_boost_attr_group = {
-	.attrs = intelli_plug_perf_boost_attrs,
-};
-
-static struct kobject *intelli_plug_perf_boost_kobj;
-/* sysfs interface for performance boost (END) */
-
 void intelli_plug_suspend(void)
 {
-	if (intelli_plug_active) {
+	if (enabled) {
 		int cpu;
 	
 		flush_workqueue(intelliplug_wq);
@@ -434,8 +434,7 @@ static void wakeup_boost(void)
 
 void __ref intelli_plug_resume(void)
 {
-
-	if (intelli_plug_active) {
+	if (enabled) {
 		int cpu;
 
 		mutex_lock(&intelli_plug_mutex);
@@ -452,9 +451,10 @@ void __ref intelli_plug_resume(void)
 
 		wakeup_boost();
 		screen_off_limit(false);
+
+		queue_delayed_work_on(0, intelliplug_wq, &intelli_plug_work,
+			msecs_to_jiffies(10));
 	}
-	queue_delayed_work_on(0, intelliplug_wq, &intelli_plug_work,
-		msecs_to_jiffies(10));
 }
 
 static int fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
@@ -487,8 +487,9 @@ static void intelli_plug_input_event(struct input_handle *handle,
 {
 	pr_debug("intelli_plug touched!\n");
 
-	queue_delayed_work_on(0, intelliplug_wq, &intelli_plug_boost,
-		msecs_to_jiffies(10));
+	if (enabled && touch_boost && !suspended)
+		queue_delayed_work_on(0, intelliplug_wq, &intelli_plug_boost,
+			msecs_to_jiffies(10));
 }
 
 static int intelli_plug_input_connect(struct input_handler *handler,
@@ -582,19 +583,6 @@ int __init intelli_plug_init(void)
 	INIT_DELAYED_WORK(&intelli_plug_boost, intelli_plug_boost_fn);
 	queue_delayed_work_on(0, intelliplug_wq, &intelli_plug_work,
 		msecs_to_jiffies(10));
-
-	intelli_plug_perf_boost_kobj
-		= kobject_create_and_add("intelli_plug", kernel_kobj);
-
-	if (!intelli_plug_perf_boost_kobj) {
-		return -ENOMEM;
-	}
-
-	rc = sysfs_create_group(intelli_plug_perf_boost_kobj,
-				&intelli_plug_perf_boost_attr_group);
-
-	if (rc)
-		kobject_put(intelli_plug_perf_boost_kobj);
 
 	return 0;
 }
