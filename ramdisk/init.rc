@@ -664,7 +664,3 @@ on property:ro.debuggable=1
     # The folder is used to store method traces.
     chmod 0773 /data/misc/trace
     start console
-
-service flash_recovery /system/bin/install-recovery.sh
-    class main
-    oneshot
