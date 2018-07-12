@@ -3365,6 +3365,8 @@ static ssize_t atmxt_debug_drv_stat_show(struct device *dev,
 }
 static DEVICE_ATTR(drv_stat, S_IRUGO, atmxt_debug_drv_stat_show, NULL);
 
+extern void intelli_plug_suspend(void);
+extern void __ref intelli_plug_resume(void);
 
 static ssize_t atmxt_drv_interactivemode_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t size)
@@ -3388,6 +3390,7 @@ static ssize_t atmxt_drv_interactivemode_store(struct device *dev,
 			dd->touch_supp_active = false;
 		}
 		err = atmxt_enter_aot(dd);
+		intelli_plug_suspend();
 		break;
 
 	case 1:
@@ -3398,6 +3401,7 @@ static ssize_t atmxt_drv_interactivemode_store(struct device *dev,
 				schedule_delayed_work(&dd->dwork,
 						      msecs_to_jiffies(200));
 		}
+		intelli_plug_resume();
 		break;
 
 	default:

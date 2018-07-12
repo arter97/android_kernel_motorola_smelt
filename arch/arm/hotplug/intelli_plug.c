@@ -397,7 +397,7 @@ static struct attribute_group intelli_plug_perf_boost_attr_group = {
 static struct kobject *intelli_plug_perf_boost_kobj;
 /* sysfs interface for performance boost (END) */
 
-static void intelli_plug_suspend(void)
+void intelli_plug_suspend(void)
 {
 	if (intelli_plug_active) {
 		int cpu;
@@ -431,7 +431,7 @@ static void wakeup_boost(void)
 	}
 }
 
-static void __ref intelli_plug_resume(void)
+void __ref intelli_plug_resume(void)
 {
 
 	if (intelli_plug_active) {
