@@ -136,19 +136,11 @@ static const unsigned int *nr_run_profiles[] = {
 };
 
 #define NR_RUN_ECO_MODE_PROFILE	3
-#define NR_RUN_HYSTERESIS_QUAD	8
-#define NR_RUN_HYSTERESIS_DUAL	4
 
 #define CPU_NR_THRESHOLD	((THREAD_CAPACITY << 1) + (THREAD_CAPACITY / 2))
 
-static unsigned int nr_possible_cores;
-module_param(nr_possible_cores, uint, 0444);
-
-static unsigned int cpu_nr_run_threshold = CPU_NR_THRESHOLD;
+static __read_mostly unsigned int cpu_nr_run_threshold = CPU_NR_THRESHOLD;
 module_param(cpu_nr_run_threshold, uint, 0664);
-
-static unsigned int nr_run_hysteresis = NR_RUN_HYSTERESIS_QUAD;
-module_param(nr_run_hysteresis, uint, 0664);
 
 static unsigned int nr_run_last;
 
@@ -184,7 +176,7 @@ static unsigned int calculate_thread_stats(void)
 		nr_threshold = current_profile[nr_run - 1];
 
 		if (nr_run_last <= nr_run)
-			nr_threshold += nr_run_hysteresis;
+			nr_threshold += 8;
 		if (avg_nr_run <= (nr_threshold << (FSHIFT - nr_fshift)))
 			break;
 	}
@@ -568,19 +560,9 @@ int __init intelli_plug_init(void)
 	struct cpufreq_policy *policy;
 	struct ip_cpu_info *l_ip_info;
 
-	nr_possible_cores = num_possible_cpus();
-
 	pr_info("intelli_plug: version %d.%d by faux123\n",
 		 INTELLI_PLUG_MAJOR_VERSION,
 		 INTELLI_PLUG_MINOR_VERSION);
-
-	if (nr_possible_cores > 2) {
-		nr_run_hysteresis = NR_RUN_HYSTERESIS_QUAD;
-		nr_run_profile_sel = 0;
-	} else {
-		nr_run_hysteresis = NR_RUN_HYSTERESIS_DUAL;
-		nr_run_profile_sel = NR_RUN_ECO_MODE_PROFILE;
-	}
 
 	l_ip_info = &per_cpu(ip_info, 0);
 	policy = cpufreq_cpu_get(0);
