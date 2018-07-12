@@ -184,7 +184,7 @@ static unsigned int nr_run_last;
 extern unsigned long avg_nr_running(void);
 extern unsigned long avg_cpu_nr_running(unsigned int cpu);
 
-static unsigned int calculate_thread_stats(void)
+static inline unsigned int calculate_thread_stats(void)
 {
 	unsigned int avg_nr_run = avg_nr_running();
 	unsigned int nr_run;
@@ -240,7 +240,7 @@ static int cmp_nr_running(const void *a, const void *b)
 }
 */
 
-static void update_per_cpu_stat(void)
+static inline void update_per_cpu_stat(void)
 {
 	unsigned int cpu;
 	struct ip_cpu_info *l_ip_info;
@@ -253,7 +253,7 @@ static void update_per_cpu_stat(void)
 	}
 }
 
-static void unplug_cpu(int min_active_cpu)
+static inline void unplug_cpu(int min_active_cpu)
 {
 	unsigned int cpu;
 	struct ip_cpu_info *l_ip_info;
