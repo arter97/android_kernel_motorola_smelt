@@ -23,8 +23,7 @@
 #include <linux/cpufreq.h>
 #include <linux/fb.h>
 
-//#define DEBUG_INTELLI_PLUG
-#undef DEBUG_INTELLI_PLUG
+// #define DEBUG
 
 #define INTELLI_PLUG_MAJOR_VERSION	4
 #define INTELLI_PLUG_MINOR_VERSION	0
@@ -220,10 +219,8 @@ static void update_per_cpu_stat(void)
 	for_each_online_cpu(cpu) {
 		l_ip_info = &per_cpu(ip_info, cpu);
 		l_ip_info->cpu_nr_running = avg_cpu_nr_running(cpu);
-#ifdef DEBUG_INTELLI_PLUG
-		pr_info("cpu %u nr_running => %lu\n", cpu,
+		pr_debug("cpu %u nr_running => %lu\n", cpu,
 			l_ip_info->cpu_nr_running);
-#endif
 	}
 }
 
@@ -256,9 +253,7 @@ static void __ref intelli_plug_work_fn(struct work_struct *work)
 	if (intelli_plug_active) {
 		nr_run_stat = calculate_thread_stats();
 		update_per_cpu_stat();
-#ifdef DEBUG_INTELLI_PLUG
-		pr_info("nr_run_stat: %u\n", nr_run_stat);
-#endif
+		pr_debug("nr_run_stat: %u\n", nr_run_stat);
 		cpu_count = nr_run_stat;
 		nr_cpus = num_online_cpus();
 
@@ -273,9 +268,7 @@ static void __ref intelli_plug_work_fn(struct work_struct *work)
 					//take down everyone
 					unplug_cpu(0);
 				}
-#ifdef DEBUG_INTELLI_PLUG
-				pr_info("case 1: %u\n", persist_count);
-#endif
+				pr_debug("case 1: %u\n", persist_count);
 				break;
 			case 2:
 				if (persist_count == 0)
@@ -286,9 +279,7 @@ static void __ref intelli_plug_work_fn(struct work_struct *work)
 				} else {
 					unplug_cpu(1);
 				}
-#ifdef DEBUG_INTELLI_PLUG
-				pr_info("case 2: %u\n", persist_count);
-#endif
+				pr_debug("case 2: %u\n", persist_count);
 				break;
 			case 3:
 				if (persist_count == 0)
@@ -299,9 +290,7 @@ static void __ref intelli_plug_work_fn(struct work_struct *work)
 				} else {
 					unplug_cpu(2);
 				}
-#ifdef DEBUG_INTELLI_PLUG
-				pr_info("case 3: %u\n", persist_count);
-#endif
+				pr_debug("case 3: %u\n", persist_count);
 				break;
 			case 4:
 				if (persist_count == 0)
@@ -309,19 +298,15 @@ static void __ref intelli_plug_work_fn(struct work_struct *work)
 				if (nr_cpus < 4)
 					for (i = 1; i < cpu_count; i++)
 						cpu_up(i);
-#ifdef DEBUG_INTELLI_PLUG
-				pr_info("case 4: %u\n", persist_count);
-#endif
+				pr_debug("case 4: %u\n", persist_count);
 				break;
 			default:
 				pr_err("Run Stat Error: Bad value %u\n", nr_run_stat);
 				break;
 			}
 		}
-#ifdef DEBUG_INTELLI_PLUG
 		else
-			pr_info("intelli_plug is suspened!\n");
-#endif
+			pr_debug("intelli_plug is suspened!\n");
 	}
 	queue_delayed_work_on(0, intelliplug_wq, &intelli_plug_work,
 		msecs_to_jiffies(sampling_time));
@@ -346,10 +331,8 @@ static void screen_off_limit(bool on)
 			l_ip_info->cur_max = policy->max;
 			policy->max = screen_off_max;
 			policy->cpuinfo.max_freq = screen_off_max;
-#ifdef DEBUG_INTELLI_PLUG
-			pr_info("cpuinfo max is (on): %u %u\n",
+			pr_debug("cpuinfo max is (on): %u %u\n",
 				policy->cpuinfo.max_freq, l_ip_info->sys_max);
-#endif
 		} else {
 			/* restore */
 			if (cpu != 0) {
@@ -357,10 +340,8 @@ static void screen_off_limit(bool on)
 			}
 			policy->cpuinfo.max_freq = l_ip_info->sys_max;
 			policy->max = l_ip_info->cur_max;
-#ifdef DEBUG_INTELLI_PLUG
-			pr_info("cpuinfo max is (off): %u %u\n",
+			pr_debug("cpuinfo max is (off): %u %u\n",
 				policy->cpuinfo.max_freq, l_ip_info->sys_max);
-#endif
 		}
 		cpufreq_update_policy(cpu);
 	}
@@ -511,9 +492,8 @@ static struct notifier_block intelli_plug_notifier_block = {
 static void intelli_plug_input_event(struct input_handle *handle,
 		unsigned int type, unsigned int code, int value)
 {
-#ifdef DEBUG_INTELLI_PLUG
-	pr_info("intelli_plug touched!\n");
-#endif
+	pr_debug("intelli_plug touched!\n");
+
 	queue_delayed_work_on(0, intelliplug_wq, &intelli_plug_boost,
 		msecs_to_jiffies(10));
 }
