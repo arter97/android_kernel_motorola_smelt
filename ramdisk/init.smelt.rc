@@ -30,14 +30,6 @@ on init
   symlink /sdcard /mnt/sdcard
   symlink /sdcard /storage/sdcard0
 
-  # Prevent healthd from preventing/throttling charge during initial boot
-  write /sys/devices/0.bq5105x-ctrl/chg_n/value 0
-  write /sys/devices/0.bq5105x-ctrl/chg_rate/value 0
-  write /sys/devices/0.bq5105x-ctrl/chg_term/value 0
-  chmod 0444 /sys/devices/0.bq5105x-ctrl/chg_n/value
-  chmod 0444 /sys/devices/0.bq5105x-ctrl/chg_rate/value
-  chmod 0444 /sys/devices/0.bq5105x-ctrl/chg_term/value
-
 on charger
   write /sys/devices/system/cpu/cpu1/online 0
   write /sys/devices/system/cpu/cpu2/online 0
@@ -163,16 +155,10 @@ on property:sys.boot_completed=1
   write /sys/module/intelli_plug/parameters/enabled 1
   write /sys/module/intelli_plug/parameters/touch_boost 1
 
-  chmod 0644 /sys/devices/0.bq5105x-ctrl/chg_n/value
-  chmod 0644 /sys/devices/0.bq5105x-ctrl/chg_rate/value
-  chmod 0644 /sys/devices/0.bq5105x-ctrl/chg_term/value
-
   # Free memory cache
   write /proc/sysrq-trigger s
   write /proc/sys/vm/drop_caches 3
   write /proc/sys/vm/vfs_cache_pressure 10000
-
-  restart healthd
 
 on property:hw.m4.download_complete=true
   start m4setup
