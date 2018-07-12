@@ -347,7 +347,7 @@ static void screen_off_limit(bool on)
 	}
 }
 
-void __ref intelli_plug_perf_boost(bool on)
+static void __ref intelli_plug_perf_boost(bool on)
 {
 	unsigned int cpu;
 
