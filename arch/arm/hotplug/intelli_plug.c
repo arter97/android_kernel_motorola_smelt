@@ -416,7 +416,7 @@ void intelli_plug_suspend(void)
 
 void __ref intelli_plug_resume(void)
 {
-	if (enabled) {
+	if (enabled && !boost) {
 		int cpu;
 
 		mutex_lock(&intelli_plug_mutex);
