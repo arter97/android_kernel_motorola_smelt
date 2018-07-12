@@ -14,7 +14,7 @@
  *
  */
 
-#define DEBUG
+// #define DEBUG
 
 #include <linux/workqueue.h>
 #include <linux/cpu.h>
