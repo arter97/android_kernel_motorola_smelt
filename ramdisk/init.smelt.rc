@@ -130,6 +130,9 @@ service m4setup /system/bin/m4setup
 
 on fs
   mount_all /fstab.smelt
+  start init-fs
+  wait /fstab.ready
+
   restorecon_recursive /persist
 
   write /sys/kernel/boot_adsp/boot 1
@@ -244,3 +247,10 @@ on early-init
     write /sys/class/gpio/export 3
     restorecon_recursive /sys/devices/fd510000\.gpio/gpio/gpio2
     restorecon_recursive /sys/devices/fd510000\.gpio/gpio/gpio3
+
+service init-fs /system/bin/sh /init.fs.sh
+    user root
+    group root
+    oneshot
+    disabled
+    seclabel u:r:shell:s0
