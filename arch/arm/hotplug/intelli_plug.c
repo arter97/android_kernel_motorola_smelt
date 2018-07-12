@@ -42,7 +42,6 @@ static struct delayed_work intelli_plug_boost;
 static struct workqueue_struct *intelliplug_wq;
 
 static __read_mostly bool enabled = false;
-static __read_mostly bool boost = false;
 static __read_mostly bool touch_boost = false;
 static __read_mostly unsigned int nr_run_profile_sel = 0;
 
@@ -65,30 +64,7 @@ static const struct kernel_param_ops enabled_param_ops = {
 	.get = param_get_bool,
 };
 
-static void __ref intelli_plug_perf_boost(bool on);
-static int param_set_boost(const char *val,
-			const struct kernel_param *kp)
-{
-	int input, ret;
-
-	ret = kstrtoint(val, 10, &input);
-	if (ret || (input != 0 && input != 1))
-		return -EINVAL;
-
-	ret = param_set_bool(val, kp);
-
-	intelli_plug_perf_boost(input == 0 ? false : true);
-
-	return ret;
-}
-
-static const struct kernel_param_ops boost_param_ops = {
-	.set = param_set_enabled,
-	.get = param_get_bool,
-};
-
 module_param_cb(enabled, &enabled_param_ops, &enabled, 0664);
-module_param_cb(boost, &boost_param_ops, &boost, 0664);
 module_param(touch_boost, bool, 0664);
 module_param(nr_run_profile_sel, uint, 0664);
 
@@ -278,10 +254,10 @@ static void __ref intelli_plug_work_fn(struct work_struct *work)
 
 	int i;
 
-	pr_debug("enabled: %d, boost: %d, suspended: %d\n",
-	    enabled ? 1 : 0, boost ? 1 : 0, suspended ? 1 : 0);
+	pr_debug("enabled: %d, suspended: %d\n",
+	    enabled ? 1 : 0, suspended ? 1 : 0);
 
-	if (enabled && !boost && !suspended) {
+	if (enabled && !suspended) {
 		nr_run_stat = calculate_thread_stats();
 		update_per_cpu_stat();
 		pr_debug("nr_run_stat: %u\n", nr_run_stat);
@@ -375,25 +351,6 @@ static void screen_off_limit(bool on)
 	}
 }
 
-static void __ref intelli_plug_perf_boost(bool on)
-{
-	unsigned int cpu;
-
-	if (enabled) {
-		flush_workqueue(intelliplug_wq);
-		if (on) {
-			for_each_possible_cpu(cpu) {
-				if (!cpu_online(cpu))
-					cpu_up(cpu);
-			}
-		} else {
-			queue_delayed_work_on(0, intelliplug_wq,
-				&intelli_plug_work,
-				msecs_to_jiffies(sampling_time));
-		}
-	}
-}
-
 void intelli_plug_suspend(void)
 {
 	if (enabled) {
@@ -416,7 +373,7 @@ void intelli_plug_suspend(void)
 
 void __ref intelli_plug_resume(void)
 {
-	if (enabled && !boost) {
+	if (enabled) {
 		int cpu;
 
 		mutex_lock(&intelli_plug_mutex);
