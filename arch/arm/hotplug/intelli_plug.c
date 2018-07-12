@@ -425,11 +425,8 @@ void __ref intelli_plug_resume(void)
 		suspended = false;
 		mutex_unlock(&intelli_plug_mutex);
 
-		for_each_possible_cpu(cpu) {
-			if (cpu == 0)
-				continue;
-			cpu_up(cpu);
-		}
+		// Boost 2nd core
+		cpu_up(1);
 
 		screen_off_limit(false);
 
