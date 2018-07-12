@@ -40,7 +40,6 @@ static struct delayed_work intelli_plug_work;
 static struct delayed_work intelli_plug_boost;
 
 static struct workqueue_struct *intelliplug_wq;
-static struct workqueue_struct *intelliplug_boost_wq;
 
 static __read_mostly bool enabled = false;
 static __read_mostly bool boost = false;
@@ -569,8 +568,6 @@ int __init intelli_plug_init(void)
 	fb_register_client(&intelli_plug_notifier_block);
 
 	intelliplug_wq = alloc_workqueue("intelliplug",
-				WQ_HIGHPRI | WQ_UNBOUND, 1);
-	intelliplug_boost_wq = alloc_workqueue("iplug_boost",
 				WQ_HIGHPRI | WQ_UNBOUND, 1);
 	INIT_DELAYED_WORK(&intelli_plug_work, intelli_plug_work_fn);
 	INIT_DELAYED_WORK(&intelli_plug_boost, intelli_plug_boost_fn);
