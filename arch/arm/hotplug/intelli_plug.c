@@ -414,20 +414,6 @@ void intelli_plug_suspend(void)
 	}
 }
 
-static void wakeup_boost(void)
-{
-	unsigned int cpu;
-	struct cpufreq_policy *policy;
-	struct ip_cpu_info *l_ip_info;
-
-	for_each_online_cpu(cpu) {
-		policy = cpufreq_cpu_get(0);
-		l_ip_info = &per_cpu(ip_info, 0);
-		policy->cur = l_ip_info->cur_max;
-		cpufreq_update_policy(cpu);
-	}
-}
-
 void __ref intelli_plug_resume(void)
 {
 	if (enabled) {
@@ -445,7 +431,6 @@ void __ref intelli_plug_resume(void)
 			cpu_up(cpu);
 		}
 
-		wakeup_boost();
 		screen_off_limit(false);
 
 		queue_delayed_work_on(0, intelliplug_wq, &intelli_plug_work,
