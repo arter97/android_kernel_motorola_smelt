@@ -15,6 +15,39 @@ if [ "${1}" = "skip" ] ; then
 else
 	echo "Compiling kernel"
 	cp defconfig .config
+scripts/configcleaner "
+CONFIG_KERNEL_XZ
+CONFIG_KERNEL_LZO
+CONFIG_RD_XZ
+CONFIG_RD_LZO
+CONFIG_XZ_DEC
+CONFIG_XZ_DEC_X86
+CONFIG_XZ_DEC_POWERPC
+CONFIG_XZ_DEC_IA64
+CONFIG_XZ_DEC_ARM
+CONFIG_XZ_DEC_ARMTHUMB
+CONFIG_XZ_DEC_SPARC
+CONFIG_LZO_DECOMPRESS
+CONFIG_XZ_DEC
+CONFIG_XZ_DEC_TEST
+CONFIG_DECOMPRESS_XZ
+CONFIG_DECOMPRESS_LZO
+"
+	echo "
+CONFIG_KERNEL_XZ=y
+# CONFIG_KERNEL_LZO is not set
+CONFIG_RD_XZ=y
+# CONFIG_RD_LZO is not set
+CONFIG_XZ_DEC=y
+# CONFIG_XZ_DEC_X86 is not set
+# CONFIG_XZ_DEC_POWERPC is not set
+# CONFIG_XZ_DEC_IA64 is not set
+# CONFIG_XZ_DEC_ARM is not set
+# CONFIG_XZ_DEC_ARMTHUMB is not set
+# CONFIG_XZ_DEC_SPARC is not set
+# CONFIG_XZ_DEC_TEST is not set
+CONFIG_DECOMPRESS_XZ=y
+" >> .config
 	make "$@" || exit 1
 fi
 
@@ -38,13 +71,13 @@ cd $KERNELDIR
 rm -rf $RAMFS_TMP/tmp/*
 
 cd $RAMFS_TMP
-find . | fakeroot cpio -H newc -o | lzop -9 > $RAMFS_TMP.cpio.lzo
-ls -lh $RAMFS_TMP.cpio.lzo
+find . | fakeroot cpio -H newc -o | xz --check=crc32 > $RAMFS_TMP.cpio.xz
+ls -lh $RAMFS_TMP.cpio.xz
 cd $KERNELDIR
 
 echo "Making new boot image"
 gcc -w -s -pipe -O2 -Itools/libmincrypt -o tools/mkbootimg/mkbootimg tools/libmincrypt/*.c tools/mkbootimg/mkbootimg.c
-tools/mkbootimg/mkbootimg --kernel $KERNELDIR/arch/arm/boot/zImage-dtb --ramdisk $RAMFS_TMP.cpio.lzo --cmdline 'console=ttyHSL0,115200,n8 androidboot.console=ttyHSL0 androidboot.hardware=carp utags.blkdev=/dev/block/platform/msm_sdcc.1/by-name/utags utags.backup=/dev/block/platform/msm_sdcc.1/by-name/utagsBackup user_debug=31 msm_rtb.filter=0x3 buildvariant=user androidboot.selinux=permissive' --base 0x00000000 --pagesize 2048 --kernel_offset 0x00008000 --ramdisk_offset 0x02000000 --tags_offset 0x01e00000 --second_offset 0x00f00000 -o $KERNELDIR/recovery.img
+tools/mkbootimg/mkbootimg --kernel $KERNELDIR/arch/arm/boot/zImage-dtb --ramdisk $RAMFS_TMP.cpio.xz --cmdline 'console=ttyHSL0,115200,n8 androidboot.console=ttyHSL0 androidboot.hardware=carp utags.blkdev=/dev/block/platform/msm_sdcc.1/by-name/utags utags.backup=/dev/block/platform/msm_sdcc.1/by-name/utagsBackup user_debug=31 msm_rtb.filter=0x3 buildvariant=user androidboot.selinux=permissive' --base 0x00000000 --pagesize 2048 --kernel_offset 0x00008000 --ramdisk_offset 0x02000000 --tags_offset 0x01e00000 --second_offset 0x00f00000 -o $KERNELDIR/recovery.img
 
 echo "done"
 ls -al recovery.img
