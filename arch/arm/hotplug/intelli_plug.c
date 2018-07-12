@@ -68,7 +68,7 @@ struct ip_cpu_info {
 
 static DEFINE_PER_CPU(struct ip_cpu_info, ip_info);
 
-static __read_mostly unsigned int screen_off_max = UINT_MAX;
+static __read_mostly unsigned int screen_off_max = 300000;
 module_param(screen_off_max, uint, 0664);
 
 #define CAPACITY_RESERVE	50
