@@ -1,11 +1,11 @@
 #
 # ADDITIONAL_DEFAULT_PROPERTIES
 #
-ro.secure=0
+ro.secure=1
 security.perf_harden=1
-ro.adb.secure=0
+ro.adb.secure=1
 ro.allow.mock.location=0
-ro.debuggable=1
+ro.debuggable=0
 ro.zygote=zygote32
 pm.dexopt.first-boot=everything
 pm.dexopt.boot=everything
@@ -44,4 +44,5 @@ config.disable_cameraservice=true
 ro.bootimage.build.date=Fri Oct 20 19:13:07 UTC 2017
 ro.bootimage.build.date.utc=1508526787
 ro.bootimage.build.fingerprint=motorola/carp/carp:7.1.1/NWD1.171020.001/4408697:user/release-keys
-persist.sys.usb.config=mtp,adb
+persist.sys.usb.config=none
+
