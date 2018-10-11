@@ -134,6 +134,7 @@ smelt_dock_debounce_alarm(struct alarm *alarm, ktime_t now)
 
 static irqreturn_t smelt_dock_irq_thread(int irq, void *devid)
 {
+	char *argv[] = { "/system/xbin/charge.sh", NULL };
 	struct smelt_dock *chip = devid;
 	struct debounce *debounce = chip->debounce;
 	int state = dock_state(chip->dts);
@@ -147,6 +148,12 @@ static irqreturn_t smelt_dock_irq_thread(int irq, void *devid)
 	mutex_lock(&chip->sdev_mutex);
 	switch_set_state(chip->sdev, state);
 	power_supply_changed(&chip->charger);
+
+	if (state) {
+		pr_info("smelt-dock: executing /system/xbin/charge.sh\n");
+		call_usermodehelper(argv[0], argv, NULL, UMH_WAIT_EXEC);
+	}
+
 #ifdef CONFIG_DOCK_STATUS_NOTIFY
 	dock_status_notify_subscriber(
 		(state ? DOCK_STATUS_EVENT_DOCKON : DOCK_STATUS_EVENT_DOCKOFF));
