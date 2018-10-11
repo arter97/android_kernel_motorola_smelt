@@ -526,6 +526,8 @@ static int m4fus_probe(struct platform_device *pdev)
 		goto m4fus_probe_fail;
 	}
 
+	device_enable_async_suspend(&pdev->dev);
+
 	return 0;
 
 m4fus_probe_fail:

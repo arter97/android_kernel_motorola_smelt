@@ -551,6 +551,8 @@ static int m4pas_probe(struct platform_device *pdev)
 		goto m4pas_probe_fail;
 	}
 
+	device_enable_async_suspend(&pdev->dev);
+
 	return 0;
 
 m4pas_probe_fail:

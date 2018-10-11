@@ -130,6 +130,8 @@ static int rtc_sensorhub_probe(struct platform_device *p_platdev)
 		goto err_free_priv_data;
 	}
 
+	device_enable_async_suspend(&p_platdev->dev);
+
 	return 0;
 
 err_free_priv_data:

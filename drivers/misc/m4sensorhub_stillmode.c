@@ -334,6 +334,8 @@ static int stillmode_client_probe(struct platform_device *pdev)
 		goto remove_stillmode_sysfs;
 	}
 
+	device_enable_async_suspend(&pdev->dev);
+
 	KDEBUG(M4SH_INFO, "Initialized %s driver\n",
 		STILLMODE_CLIENT_DRIVER_NAME);
 

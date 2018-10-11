@@ -637,6 +637,8 @@ static int m4hrt_probe(struct platform_device *pdev)
 		goto m4hrt_probe_fail;
 	}
 
+	device_enable_async_suspend(&pdev->dev);
+
 	return 0;
 
 m4hrt_probe_fail:

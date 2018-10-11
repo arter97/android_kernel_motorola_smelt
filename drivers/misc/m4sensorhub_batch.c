@@ -281,6 +281,8 @@ static int m4sensorhub_batch_probe(struct platform_device *pdev)
 		goto cleanup_mem;
 	}
 
+	device_enable_async_suspend(&pdev->dev);
+
 	dd->init_complete = 1;
 	mutex_unlock(&(dd->mutex));
 	return 0;

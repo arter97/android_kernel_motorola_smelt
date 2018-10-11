@@ -891,6 +891,9 @@ static int m4sensorhub_probe(struct i2c_client *client,
 			__func__, err);
 		goto err_panic_shutdown;
 	}
+
+	device_enable_async_suspend(&m4sensorhub->i2c_client->dev);
+
 	KDEBUG(M4SH_NOTICE, "Registered M4 Sensor Hub\n");
 
 	goto done;

@@ -372,6 +372,8 @@ static int download_client_probe(struct platform_device *pdev)
 	atomic_set(&m4_dlcmd_resp_ready, false);
 	atomic_set(&download_client_entry, 0);
 
+	device_enable_async_suspend(&pdev->dev);
+
 	KDEBUG(M4SH_INFO, "Initialized %s driver\n",
 		DOWNLOAD_CLIENT_DRIVER_NAME);
 	return 0;

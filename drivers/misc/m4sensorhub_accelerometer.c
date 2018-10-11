@@ -686,6 +686,8 @@ static int m4acc_probe(struct platform_device *pdev)
 		goto m4acc_probe_fail;
 	}
 
+	device_enable_async_suspend(&pdev->dev);
+
 	return 0;
 m4acc_probe_fail:
 	m4acc_remove_iiodev(iio); /* iio and dd are freed here */
