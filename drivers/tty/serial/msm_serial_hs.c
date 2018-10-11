@@ -1737,7 +1737,7 @@ static void msm_hs_start_tx_locked(struct uart_port *uport )
 
 	if (msm_uport->clk_state != MSM_HS_CLK_ON) {
 		msm_uport->tx_pending = true;
-		MSM_HS_WARN("%s: Clock not on; tx pending clock on\n", __func__);
+		MSM_HS_DBG("%s: Clock not on; tx pending clock on\n", __func__);
 		return;
 	}
 
