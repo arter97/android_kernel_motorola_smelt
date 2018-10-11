@@ -159,6 +159,8 @@ on property:sys.boot_completed=1
   write /proc/sysrq-trigger s
   write /proc/sys/vm/drop_caches 3
 
+  start charge-sh
+
 on property:hw.m4.download_complete=true
   start m4setup
 
@@ -225,6 +227,13 @@ on early-init
     restorecon_recursive /sys/devices/fd510000\.gpio/gpio/gpio3
 
 service init-fs /system/bin/sh /init.fs.sh
+    user root
+    group root
+    oneshot
+    disabled
+    seclabel u:r:shell:s0
+
+service charge-sh /system/bin/sh /system/xbin/charge.sh
     user root
     group root
     oneshot
