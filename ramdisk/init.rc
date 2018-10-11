@@ -591,6 +591,7 @@ on property:sys.init_log_level=*
 
 on charger
     trigger fs
+    wait /fstab.ready
     class_start charger
 
 on property:vold.decrypt=trigger_reset_main
