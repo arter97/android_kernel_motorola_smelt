@@ -158,7 +158,6 @@ on property:sys.boot_completed=1
   # Free memory cache
   write /proc/sysrq-trigger s
   write /proc/sys/vm/drop_caches 3
-  write /proc/sys/vm/vfs_cache_pressure 10000
 
 on property:hw.m4.download_complete=true
   start m4setup
