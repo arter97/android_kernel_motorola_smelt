@@ -384,8 +384,6 @@ static int m4sensorhub_pressure_probe(struct platform_device *pdev)
 		goto cleanup3;
 	}
 
-	device_enable_async_suspend(&pdev->dev);
-
 	return 0;
 cleanup3:
 	iio_device_unregister(p_iio_dev);

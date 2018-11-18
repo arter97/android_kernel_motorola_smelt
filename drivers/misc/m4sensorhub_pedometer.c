@@ -1024,8 +1024,6 @@ static int m4ped_probe(struct platform_device *pdev)
 		goto m4ped_probe_fail;
 	}
 
-	device_enable_async_suspend(&pdev->dev);
-
 	return 0;
 
 m4ped_probe_fail:

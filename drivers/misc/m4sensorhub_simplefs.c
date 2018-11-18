@@ -435,8 +435,6 @@ static int m4sensorhub_simplefs_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	device_enable_async_suspend(&pdev->dev);
-
 	platform_set_drvdata(pdev, dd);
 
 	ret = device_create_file(&pdev->dev, &dev_attr_list);

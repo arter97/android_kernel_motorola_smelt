@@ -457,8 +457,6 @@ static int m4com_probe(struct platform_device *pdev)
 		goto m4com_driver_init_sysfs_fail;
 	}
 
-	device_enable_async_suspend(&pdev->dev);
-
 	return 0;
 
 m4com_driver_init_sysfs_fail:

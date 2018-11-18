@@ -486,8 +486,6 @@ static int m4ges_probe(struct platform_device *pdev)
 		goto m4ges_probe_fail;
 	}
 
-	device_enable_async_suspend(&pdev->dev);
-
 	return 0;
 
 m4ges_probe_fail:

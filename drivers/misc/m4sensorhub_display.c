@@ -456,8 +456,6 @@ static int display_client_probe(struct platform_device *pdev)
 		goto unregister_misc_device;
 	}
 
-	device_enable_async_suspend(&pdev->dev);
-
 	KDEBUG(M4SH_INFO, "Initialized %s driver\n", __func__);
 	return 0;
 
