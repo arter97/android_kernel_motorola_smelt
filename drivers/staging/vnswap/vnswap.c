@@ -30,8 +30,8 @@
 
 /* Globals */
 static int vnswap_major;
-struct vnswap *vnswap_device;
-struct page *swap_header_page;
+static struct vnswap *vnswap_device;
+static struct page *swap_header_page;
 
 /*
  * Description : virtual swp_offset -> backing storage block Mapping table
@@ -42,20 +42,20 @@ struct page *swap_header_page;
  * vnswap_table [10] = 4, vnswap_table [Others] = -1
  */
 static DEFINE_SPINLOCK(vnswap_table_lock);
-int *vnswap_table;
+static int *vnswap_table;
 
 /* Backing Storage bitmap information */
-unsigned long *backing_storage_bitmap;
-unsigned int backing_storage_bitmap_last_allocated_index = -1;
+static unsigned long *backing_storage_bitmap;
+static unsigned int backing_storage_bitmap_last_allocated_index = -1;
 
 /* Backing Storage bmap and bdev information */
-sector_t *backing_storage_bmap;
-struct block_device *backing_storage_bdev;
-struct file *backing_storage_file;
+static sector_t *backing_storage_bmap;
+static struct block_device *backing_storage_bdev;
+static struct file *backing_storage_file;
 
 static DEFINE_SPINLOCK(vnswap_original_bio_lock);
 
-void vnswap_init_disksize(u64 disksize)
+static void vnswap_init_disksize(u64 disksize)
 {
 	vnswap_device->disksize = PAGE_ALIGN(disksize);
 	if ((vnswap_device->disksize/PAGE_SIZE > MAX_SWAP_AREA_SIZE_PAGES) ||
@@ -72,7 +72,7 @@ void vnswap_init_disksize(u64 disksize)
 	vnswap_device->init_success = VNSWAP_INIT_DISKSIZE_SUCCESS;
 }
 
-int vnswap_init_backing_storage(void)
+static int vnswap_init_backing_storage(void)
 {
 	struct address_space *mapping;
 	struct inode *inode = NULL;
@@ -308,7 +308,7 @@ error:
 	return ret;
 }
 
-int vnswap_deinit_backing_storage(void)
+static int vnswap_deinit_backing_storage(void)
 {
 	struct address_space *mapping;
 	int stored_pages = atomic_read(&vnswap_device->stats.vnswap_stored_pages);
@@ -339,7 +339,7 @@ int vnswap_deinit_backing_storage(void)
 }
 
 /* find free area (nand_offset, page_offset) in backing storage */
-int vnswap_find_free_area_in_backing_storage(int *nand_offset)
+static int vnswap_find_free_area_in_backing_storage(int *nand_offset)
 {
 	int i, found = 0;
 
@@ -382,7 +382,7 @@ int vnswap_find_free_area_in_backing_storage(int *nand_offset)
 }
 
 /* refer req_bio_endio() */
-void vnswap_bio_end_read(struct bio *bio, int err)
+static void vnswap_bio_end_read(struct bio *bio, int err)
 {
 	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
 	struct bio *original_bio = (struct bio *) bio->bi_private;
@@ -493,7 +493,7 @@ out_bio_put:
 }
 
 /* refer req_bio_endio() */
-void vnswap_bio_end_write(struct bio *bio, int err)
+static void vnswap_bio_end_write(struct bio *bio, int err)
 {
 	struct bio *original_bio = (struct bio *) bio->bi_private;
 	unsigned long flags;
@@ -605,7 +605,7 @@ out_bio_put:
 }
 
 /* Insert entry into VNSWAP_IO sub system */
-int vnswap_submit_bio(int rw, int nand_offset,
+static int vnswap_submit_bio(int rw, int nand_offset,
 	struct page *page, struct bio *original_bio)
 {
 	struct bio *bio;
@@ -659,7 +659,7 @@ out:
 	return ret;
 }
 
-int vnswap_bvec_read(struct vnswap *vnswap, struct bio_vec *bvec,
+static int vnswap_bvec_read(struct vnswap *vnswap, struct bio_vec *bvec,
 	u32 index, struct bio *bio)
 {
 	struct page *page;
@@ -704,7 +704,7 @@ out:
 	return ret;
 }
 
-int vnswap_bvec_write(struct vnswap *vnswap, struct bio_vec *bvec,
+static int vnswap_bvec_write(struct vnswap *vnswap, struct bio_vec *bvec,
 	u32 index, struct bio *bio)
 {
 	struct page *page;
@@ -763,7 +763,7 @@ int vnswap_bvec_write(struct vnswap *vnswap, struct bio_vec *bvec,
 	return ret;
 }
 
-int vnswap_bvec_rw(struct vnswap *vnswap, struct bio_vec *bvec,
+static int vnswap_bvec_rw(struct vnswap *vnswap, struct bio_vec *bvec,
 	u32 index, struct bio *bio, int rw)
 {
 	int ret;
@@ -785,7 +785,7 @@ int vnswap_bvec_rw(struct vnswap *vnswap, struct bio_vec *bvec,
 	return ret;
 }
 
-void __vnswap_make_request(struct vnswap *vnswap,
+static void __vnswap_make_request(struct vnswap *vnswap,
 	struct bio *bio, int rw)
 {
 	int i, offset, ret;
@@ -898,7 +898,7 @@ static inline int vnswap_valid_io_request(struct vnswap *vnswap,
 /*
  * Handler function for all vnswap I/O requests.
  */
-void vnswap_make_request(struct request_queue *queue, struct bio *bio)
+static void vnswap_make_request(struct request_queue *queue, struct bio *bio)
 {
 	struct vnswap *vnswap = queue->queuedata;
 
@@ -937,7 +937,7 @@ error:
 	bio_io_error(bio);
 }
 
-void vnswap_slot_free_notify(struct block_device *bdev, unsigned long index)
+static void vnswap_slot_free_notify(struct block_device *bdev, unsigned long index)
 {
 	struct vnswap *vnswap;
 	int nand_offset = 0;
@@ -988,7 +988,7 @@ void vnswap_slot_free_notify(struct block_device *bdev, unsigned long index)
 #endif
 }
 
-const struct block_device_operations vnswap_devops = {
+static const struct block_device_operations vnswap_devops = {
 	.swap_slot_free_notify = vnswap_slot_free_notify,
 	.owner = THIS_MODULE
 };
@@ -1123,7 +1123,7 @@ static struct attribute *vnswap_disk_attrs[] = {
 	NULL,
 };
 
-struct attribute_group vnswap_disk_attr_group = {
+static struct attribute_group vnswap_disk_attr_group = {
 	.attrs = vnswap_disk_attrs,
 };
 
@@ -1220,7 +1220,7 @@ out_free_queue:
 	return ret;
 }
 
-void destroy_device(struct vnswap *vnswap)
+static void destroy_device(struct vnswap *vnswap)
 {
 	if (vnswap->disk)
 		sysfs_remove_group(&disk_to_dev(vnswap->disk)->kobj,
@@ -1235,7 +1235,7 @@ void destroy_device(struct vnswap *vnswap)
 		blk_cleanup_queue(vnswap->queue);
 }
 
-int __init vnswap_init(void)
+static int __init vnswap_init(void)
 {
 	int ret = 0;
 
@@ -1284,7 +1284,7 @@ out:
 	return ret;
 }
 
-void __exit vnswap_exit(void)
+static void __exit vnswap_exit(void)
 {
 	destroy_device(vnswap_device);
 
