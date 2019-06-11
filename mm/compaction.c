@@ -1204,6 +1204,11 @@ static void compact_nodes(void)
 		compact_node(nid);
 }
 
+void mm_do_compaction(void)
+{
+	compact_nodes();
+}
+
 /* The written value is actually unused, all memory is compacted */
 int sysctl_compact_memory;
 

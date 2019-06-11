@@ -132,6 +132,7 @@ smelt_dock_debounce_alarm(struct alarm *alarm, ktime_t now)
 	return ALARMTIMER_NORESTART;
 }
 
+extern void mm_do_compaction(void);
 static irqreturn_t smelt_dock_irq_thread(int irq, void *devid)
 {
 	char *argv[] = { "/system/xbin/charge.sh", NULL };
@@ -148,6 +149,8 @@ static irqreturn_t smelt_dock_irq_thread(int irq, void *devid)
 	mutex_lock(&chip->sdev_mutex);
 	switch_set_state(chip->sdev, state);
 	power_supply_changed(&chip->charger);
+
+	mm_do_compaction();
 
 	if (state) {
 		pr_info("smelt-dock: executing /system/xbin/charge.sh\n");
