@@ -3370,6 +3370,7 @@ static DEVICE_ATTR(drv_stat, S_IRUGO, atmxt_debug_drv_stat_show, NULL);
 
 extern void intelli_plug_suspend(void);
 extern void __ref intelli_plug_resume(void);
+extern void do_sync(void);
 bool atmxt_sleep __read_mostly = false;
 
 static ssize_t atmxt_drv_interactivemode_store(struct device *dev,
@@ -3396,6 +3397,7 @@ static ssize_t atmxt_drv_interactivemode_store(struct device *dev,
 		}
 		err = atmxt_enter_aot(dd);
 		intelli_plug_suspend();
+		do_sync();
 		break;
 
 	case 1:
