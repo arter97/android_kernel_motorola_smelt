@@ -36,7 +36,6 @@
 #include "adreno_trace.h"
 
 #include "a3xx_reg.h"
-#include "adreno_a3xx_snapshot.h"
 
 /* Include the master list of GPU cores that are supported */
 #include "adreno-gpulist.h"
@@ -1277,8 +1276,8 @@ static int adreno_init(struct kgsl_device *device)
 	for (i = 6; i < FT_DETECT_REGS_COUNT; i++)
 		ft_detect_regs[i] = 0;
 
-	/* turn on hang interrupt for A4XX and a330v2 by default */
-	if ((adreno_is_a4xx(adreno_dev)) || (adreno_is_a330v2(adreno_dev)))
+	/* turn on hang interrupt for a330v2 by default */
+	if (adreno_is_a330v2(adreno_dev))
 		set_bit(ADRENO_DEVICE_HANG_INTR, &adreno_dev->priv);
 
 	if (gpudev->irq_setup)
@@ -1315,15 +1314,6 @@ static int adreno_init(struct kgsl_device *device)
 		}
 	}
 
-	/* Adjust snapshot section sizes according to core */
-	if ((adreno_is_a330(adreno_dev) || adreno_is_a305b(adreno_dev))) {
-		gpudev->snapshot_data->sect_sizes->cp_state_deb =
-					A320_SNAPSHOT_CP_STATE_SECTION_SIZE;
-		gpudev->snapshot_data->sect_sizes->roq =
-					A320_SNAPSHOT_ROQ_SECTION_SIZE;
-		gpudev->snapshot_data->sect_sizes->cp_merciu =
-					A320_SNAPSHOT_CP_MERCIU_SECTION_SIZE;
-	}
 done:
 	return ret;
 }
@@ -2975,7 +2965,6 @@ static const struct kgsl_functable adreno_functable = {
 	.compat_ioctl = adreno_compat_ioctl,
 	.power_stats = adreno_power_stats,
 	.gpuid = adreno_gpuid,
-	.snapshot = adreno_snapshot,
 	.irq_handler = adreno_irq_handler,
 	.drain = adreno_drain,
 	/* Optional functions */

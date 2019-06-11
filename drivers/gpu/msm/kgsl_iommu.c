@@ -30,7 +30,7 @@
 #include "adreno.h"
 #include "kgsl_trace.h"
 #include "kgsl_cffdump.h"
-
+#include "a4xx_reg.h"
 
 static struct kgsl_iommu_register_list kgsl_iommuv0_reg[KGSL_IOMMU_REG_MAX] = {
 	{ 0, 0 },			/* GLOBAL_BASE */
@@ -1168,11 +1168,7 @@ static int kgsl_set_register_map(struct kgsl_mmu *mmu)
 			iommu_unit->iommu_halt_enable = 1;
 
 		if (kgsl_msm_supports_iommu_v2())
-			if (adreno_is_a405(adreno_dev)) {
-				iommu_unit->ahb_base =
-					KGSL_IOMMU_V2_AHB_BASE_A405;
-			} else
-				iommu_unit->ahb_base = KGSL_IOMMU_V2_AHB_BASE;
+			iommu_unit->ahb_base = KGSL_IOMMU_V2_AHB_BASE;
 		else
 			iommu_unit->ahb_base =
 				data.physstart - mmu->device->reg_phys;

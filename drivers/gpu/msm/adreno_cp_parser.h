@@ -16,7 +16,6 @@
 #include "adreno.h"
 
 extern const unsigned int a3xx_cp_addr_regs[];
-extern const unsigned int a4xx_cp_addr_regs[];
 
 /*
  * struct adreno_ib_object - Structure containing information about an
@@ -139,8 +138,6 @@ static inline int adreno_cp_parser_getreg(struct adreno_device *adreno_dev,
 
 	if (adreno_is_a3xx(adreno_dev))
 		return a3xx_cp_addr_regs[reg_enum];
-	else if (adreno_is_a4xx(adreno_dev))
-		return a4xx_cp_addr_regs[reg_enum];
 	else
 		return -EEXIST;
 }
@@ -162,9 +159,7 @@ static inline int adreno_cp_parser_regindex(struct adreno_device *adreno_dev,
 {
 	int i;
 	const unsigned int *regs;
-	if (adreno_is_a4xx(adreno_dev))
-		regs = a4xx_cp_addr_regs;
-	else if (adreno_is_a3xx(adreno_dev))
+	if (adreno_is_a3xx(adreno_dev))
 		regs = a3xx_cp_addr_regs;
 	else
 		return -EEXIST;

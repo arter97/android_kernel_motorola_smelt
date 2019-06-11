@@ -29,7 +29,7 @@
 #include "adreno_ringbuffer.h"
 
 #include "a3xx_reg.h"
-#include "adreno_a4xx.h"
+#include "a4xx_reg.h"
 
 #define ADRENO_NUM_RINGBUFFERS 1
 #define GSL_RB_NOP_SIZEDWORDS				2
@@ -366,19 +366,11 @@ static int _ringbuffer_bootstrap_ucode(struct adreno_ringbuffer *rb,
 	 * bootstrap opcode
 	 */
 
-	if (adreno_is_a4xx(adreno_dev)) {
-		adreno_writereg(adreno_dev, ADRENO_REG_CP_PFP_UCODE_ADDR,
-			0x400);
-		adreno_writereg(adreno_dev, ADRENO_REG_CP_PFP_UCODE_DATA,
-			 0x6f0009);
-		bootstrap_size = (pm4_size + pfp_size + 5 + 6);
-	} else {
-		adreno_writereg(adreno_dev, ADRENO_REG_CP_PFP_UCODE_ADDR,
-			0x200);
-		adreno_writereg(adreno_dev, ADRENO_REG_CP_PFP_UCODE_DATA,
-			 0x6f0005);
-		bootstrap_size = (pm4_size + pfp_size + 5);
-	}
+	adreno_writereg(adreno_dev, ADRENO_REG_CP_PFP_UCODE_ADDR,
+		0x200);
+	adreno_writereg(adreno_dev, ADRENO_REG_CP_PFP_UCODE_DATA,
+		 0x6f0005);
+	bootstrap_size = (pm4_size + pfp_size + 5);
 
 	/* clear ME_HALT to start micro engine */
 	adreno_writereg(adreno_dev, ADRENO_REG_CP_ME_CNTL, 0);
@@ -409,29 +401,11 @@ static int _ringbuffer_bootstrap_ucode(struct adreno_ringbuffer *rb,
  * which executes repeatedly until all of the data has been moved from
  * the ring buffer to the ME.
  */
-	if (adreno_is_a4xx(adreno_dev)) {
-		for (i = pm4_idx; i < adreno_dev->pm4_fw_size; i++)
-			*cmds++ = adreno_dev->pm4_fw[i];
-		for (i = pfp_idx; i < adreno_dev->pfp_fw_size; i++)
-			*cmds++ = adreno_dev->pfp_fw[i];
-
-		*cmds++ = cp_type3_packet(CP_REG_RMW, 3);
-		*cmds++ = 0x20000000 + A4XX_CP_RB_WPTR;
-		*cmds++ = 0xffffffff;
-		*cmds++ = 0x00000002;
-		*cmds++ = cp_type3_packet(CP_INTERRUPT, 1);
-		*cmds++ = 0;
-
-		rb->wptr = rb->wptr - 2;
-		adreno_ringbuffer_submit(rb);
-		rb->wptr = rb->wptr + 2;
-	} else {
-		for (i = pfp_idx; i < adreno_dev->pfp_fw_size; i++)
-			*cmds++ = adreno_dev->pfp_fw[i];
-		for (i = pm4_idx; i < adreno_dev->pm4_fw_size; i++)
-			*cmds++ = adreno_dev->pm4_fw[i];
-		adreno_ringbuffer_submit(rb);
-	}
+	for (i = pfp_idx; i < adreno_dev->pfp_fw_size; i++)
+		*cmds++ = adreno_dev->pfp_fw[i];
+	for (i = pm4_idx; i < adreno_dev->pm4_fw_size; i++)
+		*cmds++ = adreno_dev->pm4_fw[i];
+	adreno_ringbuffer_submit(rb);
 
 	/* idle device to validate bootstrap */
 	return adreno_spin_idle(device);
@@ -753,7 +727,7 @@ adreno_ringbuffer_addcmds(struct adreno_ringbuffer *rb,
 		total_sizedwords += 3;
 
 	/* For HLSQ updates below */
-	if (adreno_is_a4xx(adreno_dev) || adreno_is_a3xx(adreno_dev))
+	if (adreno_is_a3xx(adreno_dev))
 		total_sizedwords += 4;
 
 	total_sizedwords += 3; /* sop timestamp */
@@ -1277,10 +1251,6 @@ int adreno_ringbuffer_submitcmd(struct adreno_device *adreno_dev,
 	if (context->flags & KGSL_CONTEXT_SECURE)
 		secured_ctxt = true;
 
-	if (cmdbatch->flags & KGSL_CMDBATCH_PROFILING &&
-		adreno_is_a4xx(adreno_dev) && profile_buffer)
-		cmdbatch_profiling = true;
-
 	cmds = link = kzalloc(sizeof(unsigned int) * (numibs * 3 + 5 +
 					(secured_ctxt ? 14 : 0) +
 					(cmdbatch_profiling ? 6 : 0)),
@@ -1303,17 +1273,6 @@ int adreno_ringbuffer_submitcmd(struct adreno_device *adreno_dev,
 		*cmds++ = 1;
 	}
 
-	/*
-	 * Add cmds to read the GPU ticks at the start of the cmdbatch and
-	 * write it into the appropriate cmdbatch profiling buffer offset
-	 */
-	if (cmdbatch_profiling) {
-		*cmds++ = cp_type3_packet(CP_RECORD_PFP_TIMESTAMP, 1);
-		*cmds++ = cmdbatch->profiling_buffer_gpuaddr +
-				offsetof(struct kgsl_cmdbatch_profiling_buffer,
-				gpu_ticks_submitted);
-	}
-
 	if (numibs) {
 		list_for_each_entry(ib, &cmdbatch->cmdlist, node) {
 			/* use the preamble? */
@@ -1333,17 +1292,6 @@ int adreno_ringbuffer_submitcmd(struct adreno_device *adreno_dev,
 			*cmds++ = ib->gpuaddr;
 			*cmds++ = ib->sizedwords;
 		}
-	}
-
-	/*
-	 * Add cmds to read the GPU ticks at the end of the cmdbatch and
-	 * write it into the appropriate cmdbatch profiling buffer offset
-	 */
-	if (cmdbatch_profiling) {
-		*cmds++ = cp_type3_packet(CP_RECORD_PFP_TIMESTAMP, 1);
-		*cmds++ = cmdbatch->profiling_buffer_gpuaddr +
-				offsetof(struct kgsl_cmdbatch_profiling_buffer,
-				gpu_ticks_retired);
 	}
 
 	if (secured_ctxt) {
@@ -1385,16 +1333,6 @@ int adreno_ringbuffer_submitcmd(struct adreno_device *adreno_dev,
 
 	/* CFF stuff executed only if CFF is enabled */
 	kgsl_cffdump_capture_ib_desc(device, context, cmdbatch);
-
-	/* Put the wall clock and gpu timer values in the profiling buffer */
-	if (cmdbatch_profiling) {
-		struct timespec ts;
-		do_posix_clock_monotonic_gettime(&ts);
-		profile_buffer->wall_clock_s = ts.tv_sec;
-		profile_buffer->wall_clock_ns = ts.tv_nsec;
-		profile_buffer->gpu_ticks_queued =
-			a4xx_alwayson_counter_read(adreno_dev);
-	}
 
 	ret = adreno_ringbuffer_addcmds(rb, flags,
 					&link[0], (cmds - link),

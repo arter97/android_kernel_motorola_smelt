@@ -139,16 +139,10 @@ static unsigned int _adreno_iommu_set_pt_v1(struct kgsl_device *device,
 			 * glue commands together until next
 			 * WAIT_FOR_ME
 			 */
-			if (adreno_is_a4xx(adreno_dev))
-				cmds += adreno_wait_reg_mem(cmds,
-				adreno_getreg(adreno_dev,
-					ADRENO_REG_CP_WFI_PEND_CTR),
-					1, 0xFFFFFFFF, 0xF);
-			else
-				cmds += adreno_wait_reg_eq(cmds,
-				adreno_getreg(adreno_dev,
-					ADRENO_REG_CP_WFI_PEND_CTR),
-					1, 0xFFFFFFFF, 0xF);
+			cmds += adreno_wait_reg_eq(cmds,
+			adreno_getreg(adreno_dev,
+				ADRENO_REG_CP_WFI_PEND_CTR),
+				1, 0xFFFFFFFF, 0xF);
 
 			/* set the iommu lock bit */
 			*cmds++ = cp_type3_packet(CP_REG_RMW, 3);
@@ -160,18 +154,11 @@ static unsigned int _adreno_iommu_set_pt_v1(struct kgsl_device *device,
 			*cmds++ =
 				   KGSL_IOMMU_IMPLDEF_MICRO_MMU_CTRL_HALT;
 			/* wait for smmu to lock */
-			if (adreno_is_a4xx(adreno_dev))
-				cmds += adreno_wait_reg_mem(cmds,
-					mmu_ctrl,
-					KGSL_IOMMU_IMPLDEF_MICRO_MMU_CTRL_IDLE,
-					KGSL_IOMMU_IMPLDEF_MICRO_MMU_CTRL_IDLE,
-					0xF);
-			else
-				cmds += adreno_wait_reg_eq(cmds,
-					mmu_ctrl,
-					KGSL_IOMMU_IMPLDEF_MICRO_MMU_CTRL_IDLE,
-					KGSL_IOMMU_IMPLDEF_MICRO_MMU_CTRL_IDLE,
-					0xF);
+			cmds += adreno_wait_reg_eq(cmds,
+				mmu_ctrl,
+				KGSL_IOMMU_IMPLDEF_MICRO_MMU_CTRL_IDLE,
+				KGSL_IOMMU_IMPLDEF_MICRO_MMU_CTRL_IDLE,
+				0xF);
 		}
 		/*
 		 * set ttbr0, only need to set the higer bits if the
@@ -220,12 +207,8 @@ static unsigned int _adreno_iommu_set_pt_v1(struct kgsl_device *device,
 		tlbstatus = kgsl_mmu_get_reg_ahbaddr(&device->mmu, i,
 				KGSL_IOMMU_CONTEXT_USER,
 				KGSL_IOMMU_CTX_TLBSTATUS) >> 2;
-		if (adreno_is_a4xx(adreno_dev))
-			cmds += adreno_wait_reg_mem(cmds, tlbstatus, 0,
-				KGSL_IOMMU_CTX_TLBSTATUS_SACTIVE, 0xF);
-		else
-			cmds += adreno_wait_reg_eq(cmds, tlbstatus, 0,
-				KGSL_IOMMU_CTX_TLBSTATUS_SACTIVE, 0xF);
+		cmds += adreno_wait_reg_eq(cmds, tlbstatus, 0,
+			KGSL_IOMMU_CTX_TLBSTATUS_SACTIVE, 0xF);
 		/* release all commands with wait_for_me */
 		*cmds++ = cp_type3_packet(CP_WAIT_FOR_ME, 1);
 		*cmds++ = 0;
@@ -485,12 +468,8 @@ int _set_pagetable_gpu(struct adreno_ringbuffer *rb,
 		KGSL_IOMMU_SETSTATE_NOP_OFFSET);
 
 	if (kgsl_msm_supports_iommu_v2())
-		if (adreno_is_a4xx(adreno_dev))
-			cmds += _adreno_iommu_set_pt_v2_a4xx(device, cmds,
-					pt_val, num_iommu_units);
-		else
-			cmds += _adreno_iommu_set_pt_v2_a3xx(device, cmds,
-					pt_val, num_iommu_units);
+		cmds += _adreno_iommu_set_pt_v2_a3xx(device, cmds,
+				pt_val, num_iommu_units);
 	else if (msm_soc_version_supports_iommu_v0())
 		cmds += _adreno_iommu_set_pt_v0(device, cmds, pt_val,
 						num_iommu_units);

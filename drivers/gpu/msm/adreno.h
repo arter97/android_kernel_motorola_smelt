@@ -26,7 +26,6 @@
 #endif
 
 #include "a3xx_reg.h"
-#include "a4xx_reg.h"
 
 #define DEVICE_3D_NAME "kgsl-3d"
 #define DEVICE_3D0_NAME "kgsl-3d0"
@@ -485,6 +484,7 @@ struct adreno_vbif_snapshot_registers {
 	const int vbif_snapshot_registers_count;
 };
 
+#if 0
 /**
  * struct adreno_coresight_register - Definition for a coresight (tracebus)
  * debug register
@@ -528,7 +528,7 @@ struct adreno_coresight {
 	unsigned int count;
 	const struct attribute_group **groups;
 };
-
+#endif
 
 struct adreno_irq_funcs {
 	void (*func)(struct adreno_device *, int);
@@ -589,8 +589,6 @@ struct adreno_gpudev {
 	const struct adreno_invalid_countables
 			*invalid_countables;
 	struct adreno_snapshot_data *snapshot_data;
-
-	struct adreno_coresight *coresight;
 
 	struct adreno_irq *irq;
 	int num_prio_levels;
@@ -672,7 +670,6 @@ struct log_field {
 		i++, rb++)
 
 extern struct adreno_gpudev adreno_a3xx_gpudev;
-extern struct adreno_gpudev adreno_a4xx_gpudev;
 
 /* A3XX register set defined in adreno_a3xx.c */
 extern const unsigned int a3xx_registers[];
@@ -683,20 +680,6 @@ extern const unsigned int a3xx_hlsq_registers_count;
 
 extern const unsigned int a330_registers[];
 extern const unsigned int a330_registers_count;
-
-/* A4XX register set defined in adreno_a4xx.c */
-extern const unsigned int a4xx_registers[];
-extern const unsigned int a4xx_registers_count;
-
-extern const unsigned int a4xx_sp_tp_registers[];
-extern const unsigned int a4xx_sp_tp_registers_count;
-
-extern const unsigned int a4xx_xpu_registers[];
-extern const unsigned int a4xx_xpu_reg_cnt;
-
-extern const struct adreno_vbif_snapshot_registers
-				a4xx_vbif_snapshot_registers[];
-extern const unsigned int a4xx_vbif_snapshot_reg_cnt;
 
 extern unsigned int ft_detect_regs[];
 
@@ -762,12 +745,14 @@ int adreno_perfcounter_put(struct adreno_device *adreno_dev,
 
 int adreno_a3xx_pwron_fixup_init(struct adreno_device *adreno_dev);
 
-int adreno_coresight_init(struct adreno_device *adreno_dev);
+static inline int adreno_coresight_init(struct adreno_device *adreno_dev)
+{
+	return 0;
+}
 
-void adreno_coresight_start(struct adreno_device *adreno_dev);
-void adreno_coresight_stop(struct adreno_device *adreno_dev);
-
-void adreno_coresight_remove(struct adreno_device *adreno_dev);
+static inline void adreno_coresight_start(struct adreno_device *adreno_dev) {}
+static inline void adreno_coresight_stop(struct adreno_device *adreno_dev) {}
+static inline void adreno_coresight_remove(struct adreno_device *adreno_dev){}
 
 bool adreno_hw_isidle(struct adreno_device *adreno_dev);
 
@@ -780,8 +765,7 @@ int adreno_iommu_set_pt(struct adreno_ringbuffer *rb,
 
 static inline int adreno_is_a3xx(struct adreno_device *adreno_dev)
 {
-	return ((ADRENO_GPUREV(adreno_dev) >= 300) &&
-		(ADRENO_GPUREV(adreno_dev) < 400));
+	return true;
 }
 
 static inline int adreno_is_a305(struct adreno_device *adreno_dev)
@@ -829,26 +813,6 @@ static inline int adreno_is_a330v21(struct adreno_device *adreno_dev)
 {
 	return ((ADRENO_GPUREV(adreno_dev) == ADRENO_REV_A330) &&
 		(ADRENO_CHIPID_PATCH(adreno_dev->chipid) > 0xF));
-}
-
-static inline int adreno_is_a4xx(struct adreno_device *adreno_dev)
-{
-	return (ADRENO_GPUREV(adreno_dev) >= 400);
-}
-
-static inline int adreno_is_a405(struct adreno_device *adreno_dev)
-{
-	return (ADRENO_GPUREV(adreno_dev) == ADRENO_REV_A405);
-}
-
-static inline int adreno_is_a420(struct adreno_device *adreno_dev)
-{
-	return (ADRENO_GPUREV(adreno_dev) == ADRENO_REV_A420);
-}
-
-static inline int adreno_is_a430(struct adreno_device *adreno_dev)
-{
-	return (ADRENO_GPUREV(adreno_dev) == ADRENO_REV_A430);
 }
 
 static inline int adreno_rb_ctxtswitch(unsigned int *cmd)
@@ -1190,11 +1154,7 @@ static inline void adreno_set_protected_registers(
 	unsigned int val;
 
 	/* A430 has 24 registers (yay!).  Everything else has 16 (boo!) */
-
-	if (adreno_is_a430(adreno_dev))
-		BUG_ON(*index >= 24);
-	else
-		BUG_ON(*index >= 16);
+	BUG_ON(*index >= 16);
 
 	val = 0x60000000 | ((mask_len & 0x1F) << 24) | ((reg << 2) & 0xFFFFF);
 
@@ -1203,10 +1163,7 @@ static inline void adreno_set_protected_registers(
 	 * register
 	 */
 
-	if (adreno_is_a4xx(adreno_dev))
-		kgsl_regwrite(&adreno_dev->dev,
-				A4XX_CP_PROTECT_REG_0 + *index, val);
-	else if (adreno_is_a3xx(adreno_dev))
+	if (adreno_is_a3xx(adreno_dev))
 		kgsl_regwrite(&adreno_dev->dev,
 				A3XX_CP_PROTECT_REG_0 + *index, val);
 	*index = *index + 1;

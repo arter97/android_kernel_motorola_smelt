@@ -549,9 +549,7 @@ static void adreno_context_restore(struct adreno_ringbuffer *rb)
 	cmds[8] = cp_type0_packet(
 		adreno_getreg(adreno_dev, ADRENO_REG_UCHE_INVALIDATE0), 2);
 	cmds[9] = 0;
-	if (adreno_is_a4xx(adreno_dev))
-		cmds[10] = 0x12;
-	else if (adreno_is_a3xx(adreno_dev))
+	if (adreno_is_a3xx(adreno_dev))
 		cmds[10] = 0x90000000;
 	ret = adreno_ringbuffer_issuecmds(rb, KGSL_CMD_FLAGS_NONE, cmds, 11);
 	if (ret) {
