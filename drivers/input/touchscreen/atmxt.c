@@ -3370,6 +3370,7 @@ static DEVICE_ATTR(drv_stat, S_IRUGO, atmxt_debug_drv_stat_show, NULL);
 
 extern void intelli_plug_suspend(void);
 extern void __ref intelli_plug_resume(void);
+bool atmxt_sleep __read_mostly = false;
 
 static ssize_t atmxt_drv_interactivemode_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t size)
@@ -3388,6 +3389,7 @@ static ssize_t atmxt_drv_interactivemode_store(struct device *dev,
 
 	switch (value) {
 	case 0:
+		atmxt_sleep = true;
 		if (dd->pdata->disable_supp_on_aot) {
 			cancel_delayed_work_sync(&dd->dwork);
 			dd->touch_supp_active = false;
@@ -3397,6 +3399,7 @@ static ssize_t atmxt_drv_interactivemode_store(struct device *dev,
 		break;
 
 	case 1:
+		atmxt_sleep = false;
 		err = atmxt_exit_aot(dd);
 		if (dd->pdata->disable_supp_on_aot) {
 				atmxt_start_ic_calibration_fix(dd);
