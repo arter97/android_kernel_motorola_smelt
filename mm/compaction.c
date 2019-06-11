@@ -995,7 +995,7 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
 	 */
 	cc->migrate_pfn = zone->compact_cached_migrate_pfn;
 	cc->free_pfn = zone->compact_cached_free_pfn;
-	if (cc->free_pfn < start_pfn || cc->free_pfn > end_pfn) {
+	if (cc->free_pfn < start_pfn || cc->free_pfn >= end_pfn) {
 		cc->free_pfn = end_pfn & ~(pageblock_nr_pages-1);
 		zone->compact_cached_free_pfn = cc->free_pfn;
 	}
@@ -1154,6 +1154,14 @@ static void __compact_pgdat(pg_data_t *pgdat, struct compact_control *cc)
 		INIT_LIST_HEAD(&cc->freepages);
 		INIT_LIST_HEAD(&cc->migratepages);
 
+		/*
+		 * When called via /proc/sys/vm/compact_memory
+		 * this makes sure we compact the whole zone regardless of
+		 * cached scanner positions.
+		 */
+		if (cc->order == -1)
+			__reset_isolation_suitable(zone);
+
 		if (cc->order == -1 || !compaction_deferred(zone, cc->order))
 			compact_zone(zone, cc);
 
@@ -1192,6 +1200,7 @@ static void compact_node(int nid)
 	__compact_pgdat(NODE_DATA(nid), &cc);
 }
 
+void zswap_compact(void);
 /* Compact all nodes in the system */
 static void compact_nodes(void)
 {
@@ -1202,6 +1211,8 @@ static void compact_nodes(void)
 
 	for_each_online_node(nid)
 		compact_node(nid);
+
+	zswap_compact();
 }
 
 void mm_do_compaction(void)
