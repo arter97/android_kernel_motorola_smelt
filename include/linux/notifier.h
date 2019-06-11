@@ -11,7 +11,6 @@
 #define _LINUX_NOTIFIER_H
 #include <linux/errno.h>
 #include <linux/mutex.h>
-#include <linux/rwsem.h>
 #include <linux/srcu.h>
 
 /*
@@ -47,6 +46,8 @@
  * runtime initialization.
  */
 
+struct notifier_block;
+
 typedef	int (*notifier_fn_t)(struct notifier_block *nb,
 			unsigned long action, void *data);
 
@@ -55,6 +56,8 @@ struct notifier_block {
 	struct notifier_block __rcu *next;
 	int priority;
 };
+
+#include <linux/rwsem.h>
 
 struct atomic_notifier_head {
 	spinlock_t lock;
