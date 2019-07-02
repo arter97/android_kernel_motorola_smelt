@@ -129,3 +129,6 @@ obj-$(CONFIG_EFIVAR_FS)		+= efivarfs/
 
 # Patched by YAFFS
 obj-$(CONFIG_YAFFS_FS)		+= yaffs2/
+
+CFLAGS_binfmt_elf.o		+= -Wframe-larger-than=8192
+CFLAGS_compat_binfmt_elf.o	+= -Wframe-larger-than=8192
