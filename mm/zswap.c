@@ -104,6 +104,8 @@ module_param_named(compaction_pages, zswap_compaction_pages, uint, 0644);
 /* zpool is shared by all of zswap backend  */
 static struct zpool *zswap_pool;
 
+static const gfp_t zswap_gfp = __GFP_NORETRY | __GFP_NOWARN | __GFP_HIGHMEM | __GFP_MOVABLE;
+
 /*********************************
 * compression functions
 **********************************/
@@ -502,8 +504,7 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
 	if (dlen > PAGE_SIZE)
 		dlen = PAGE_SIZE;
 	len = dlen;
-	ret = zpool_malloc(zswap_pool, len, __GFP_NORETRY | __GFP_NOWARN,
-		&handle);
+	ret = zpool_malloc(zswap_pool, len, zswap_gfp, &handle);
 	if (ret == -ENOSPC) {
 		zswap_reject_compress_poor++;
 		goto freepage;
@@ -788,18 +789,16 @@ static void __exit zswap_debugfs_exit(void) { }
 **********************************/
 static int __init init_zswap(void)
 {
-	gfp_t gfp = __GFP_NORETRY | __GFP_NOWARN | __GFP_HIGHMEM;
-
 	if (!zswap_enabled)
 		return 0;
 
 	pr_info("loading zswap\n");
 
-	zswap_pool = zpool_create_pool(zswap_zpool_type, "zswap", gfp, NULL);
+	zswap_pool = zpool_create_pool(zswap_zpool_type, "zswap", zswap_gfp, NULL);
 	if (!zswap_pool && strcmp(zswap_zpool_type, ZSWAP_ZPOOL_DEFAULT)) {
 		pr_info("%s zpool not available\n", zswap_zpool_type);
 		zswap_zpool_type = ZSWAP_ZPOOL_DEFAULT;
-		zswap_pool = zpool_create_pool(zswap_zpool_type, "zswap", gfp, NULL);
+		zswap_pool = zpool_create_pool(zswap_zpool_type, "zswap", zswap_gfp, NULL);
 	}
 	if (!zswap_pool) {
 		pr_err("%s zpool not available\n", zswap_zpool_type);
