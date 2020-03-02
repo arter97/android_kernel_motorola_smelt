@@ -55,8 +55,6 @@
 **********************************/
 /* Total bytes used by the compressed storage */
 static u64 zswap_pool_total_size;
-/* Number of memory pages used by the compressed pool */
-static u64 zswap_pool_pages;
 /* The number of compressed pages currently stored in zswap */
 static atomic_t zswap_stored_pages = ATOMIC_INIT(0);
 
@@ -352,7 +350,6 @@ zeropage_out:
 	zswap_entry_cache_free(entry);
 	atomic_dec(&zswap_stored_pages);
 	zswap_pool_total_size = zpool_get_total_size(zswap_pool);
-	zswap_pool_pages = zpool_get_total_size(zswap_pool) >> PAGE_SHIFT;
 }
 
 /* caller must hold the tree lock */
@@ -805,7 +802,6 @@ static void zswap_writebackd_try_to_sleep(void)
 	}
 
 	if (zswap_prepare_writebackd_sleep(remaining)) {
-		trace_mm_zswap_writebackd_sleep(zswap_pool_pages);
 		if (!kthread_should_stop())
 			schedule();
 	}
@@ -832,7 +828,6 @@ static int zswap_writebackd(void *arg)
 		 * after returning from the refrigerator
 		 */
 		if (!ret) {
-			trace_mm_zswap_writebackd_wake(zswap_pool_pages);
 			if (zpool_shrink(zswap_pool, 32, NULL)) {
 				zswap_reject_reclaim_fail++;
 				zswap_writeback_resume =
@@ -853,7 +848,6 @@ static void zswap_wakeup_writebackd(void)
 	if (!zswap_writeback_ok())
 		return;
 
-	trace_mm_zswap_wakeup_writebackd(zswap_pool_pages);
 	wake_up_interruptible(&zswap_writebackd_wait);
 	zswap_writebackd_wakeup++;
 }
@@ -1008,7 +1002,6 @@ zeropage_out:
 	/* update stats */
 	atomic_inc(&zswap_stored_pages);
 	zswap_pool_total_size = zpool_get_total_size(zswap_pool);
-	zswap_pool_pages = zswap_pool_total_size >> PAGE_SHIFT;
 
 	return 0;
 
@@ -1242,8 +1235,6 @@ static int __init zswap_debugfs_init(void)
 			zswap_debugfs_root, &zswap_duplicate_entry);
 	debugfs_create_u64("pool_total_size", S_IRUGO,
 			zswap_debugfs_root, &zswap_pool_total_size);
-	debugfs_create_u64("pool_pages", S_IRUGO,
-			zswap_debugfs_root, &zswap_pool_pages);
 	debugfs_create_atomic_t("stored_pages", S_IRUGO,
 			zswap_debugfs_root, &zswap_stored_pages);
 	debugfs_create_atomic_t("zero_pages", S_IRUGO,
