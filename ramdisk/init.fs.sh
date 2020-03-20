@@ -6,10 +6,10 @@ busybox mount --bind /data/bind/system/priv-app /system/priv-app
 
 # Setup swap here to avoid memory allocation errors
 # 512 MB
-echo $((512 * 1048576)) > /sys/devices/virtual/block/vnswap0/disksize
+echo $((512 * 1048576)) > /sys/devices/virtual/block/vbswap0/disksize
 echo 180 > /proc/sys/vm/swappiness
-busybox mkswap /dev/block/vnswap0
-busybox swapon /dev/block/vnswap0
+busybox mkswap /dev/block/vbswap0
+busybox swapon /dev/block/vbswap0
 
 touch /fstab.ready
 
