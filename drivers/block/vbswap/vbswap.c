@@ -37,9 +37,9 @@ static bool vbswap_initialized;
 static inline int vbswap_valid_io_request(struct bio *bio)
 {
 	if (unlikely(
-		(bio->bi_iter.bi_sector >= (vbswap_disksize >> SECTOR_SHIFT)) ||
-		(bio->bi_iter.bi_sector & (VBSWAP_SECTOR_PER_LOGICAL_BLOCK - 1)) ||
-		(bio->bi_iter.bi_size & (VBSWAP_LOGICAL_BLOCK_SIZE - 1)))) {
+		(bio->bi_sector >= (vbswap_disksize >> SECTOR_SHIFT)) ||
+		(bio->bi_sector & (VBSWAP_SECTOR_PER_LOGICAL_BLOCK - 1)) ||
+		(bio->bi_size & (VBSWAP_LOGICAL_BLOCK_SIZE - 1)))) {
 
 		return 0;
 	}
@@ -115,42 +115,41 @@ static int vbswap_bvec_rw(struct bio_vec *bvec,
 
 static noinline void __vbswap_make_request(struct bio *bio, int rw)
 {
-	int offset, ret;
+	int i, offset, ret;
 	u32 index;
-	struct bio_vec bvec;
-	struct bvec_iter iter;
+	struct bio_vec *bvec;
 
 	if (!vbswap_valid_io_request(bio)) {
 		pr_err("%s %d: invalid io request. "
-		       "(bio->bi_iter.bi_sector, bio->bi_iter.bi_size,"
+		       "(bio->bi_sector, bio->bi_size,"
 		       "vbswap_disksize) = "
 		       "(%llu, %d, %llu)\n",
 		       __func__, __LINE__,
-		       (unsigned long long)bio->bi_iter.bi_sector,
-		       bio->bi_iter.bi_size, vbswap_disksize);
+		       (unsigned long long)bio->bi_sector,
+		       bio->bi_size, vbswap_disksize);
 
 		bio_io_error(bio);
 		return;
 	}
 
-	index = bio->bi_iter.bi_sector >> SECTORS_PER_PAGE_SHIFT;
-	offset = (bio->bi_iter.bi_sector & (SECTORS_PER_PAGE - 1)) <<
+	index = bio->bi_sector >> SECTORS_PER_PAGE_SHIFT;
+	offset = (bio->bi_sector & (SECTORS_PER_PAGE - 1)) <<
 	    SECTOR_SHIFT;
 
 	pr_debug("%s %d: (rw, index, offset, bi_size) = "
 		 "(%d, %d, %d, %d)\n",
-		 __func__, __LINE__, rw, index, offset, bio->bi_iter.bi_size);
+		 __func__, __LINE__, rw, index, offset, bio->bi_size);
 
 	if (offset) {
 		pr_err("%s %d: invalid offset. "
-		       "(bio->bi_iter.bi_sector, index, offset) = (%llu, %d, %d)\n",
+		       "(bio->bi_sector, index, offset) = (%llu, %d, %d)\n",
 		       __func__, __LINE__,
-		       (unsigned long long)bio->bi_iter.bi_sector,
+		       (unsigned long long)bio->bi_sector,
 		       index, offset);
 		goto out_error;
 	}
 
-	if (bio->bi_iter.bi_size > PAGE_SIZE) {
+	if (bio->bi_size > PAGE_SIZE) {
 		goto out_error;
 	}
 
@@ -158,19 +157,19 @@ static noinline void __vbswap_make_request(struct bio *bio, int rw)
 		goto out_error;
 	}
 
-	bio_for_each_segment(bvec, bio, iter) {
-		if (bvec.bv_len != PAGE_SIZE || bvec.bv_offset != 0) {
+	bio_for_each_segment(bvec, bio, i) {
+		if (bvec->bv_len != PAGE_SIZE || bvec->bv_offset != 0) {
 			pr_err("%s %d: bvec is misaligned. "
 			       "(bv_len, bv_offset) = (%d, %d)\n",
-			       __func__, __LINE__, bvec.bv_len, bvec.bv_offset);
+			       __func__, __LINE__, bvec->bv_len, bvec->bv_offset);
 			goto out_error;
 		}
 
-		pr_debug("%s %d: (rw, index, bvec.bv_len) = "
+		pr_debug("%s %d: (rw, index, bvec->bv_len) = "
 			 "(%d, %d, %d)\n",
-			 __func__, __LINE__, rw, index, bvec.bv_len);
+			 __func__, __LINE__, rw, index, bvec->bv_len);
 
-		ret = vbswap_bvec_rw(&bvec, index, bio, rw);
+		ret = vbswap_bvec_rw(bvec, index, bio, rw);
 		if (ret < 0) {
 			if (ret != -ENOSPC)
 				pr_err("%s %d: vbswap_bvec_rw failed."
@@ -186,8 +185,8 @@ static noinline void __vbswap_make_request(struct bio *bio, int rw)
 		index++;
 	}
 
-	bio->bi_status = BLK_STS_OK;
-	bio_endio(bio);
+	set_bit(BIO_UPTODATE, &bio->bi_flags);
+	bio_endio(bio, 0);
 
 	return;
 
@@ -198,7 +197,7 @@ out_error:
 /*
  * Handler function for all vbswap I/O requests.
  */
-static blk_qc_t vbswap_make_request(struct request_queue *queue,
+static void vbswap_make_request(struct request_queue *queue,
 				    struct bio *bio)
 {
 	// Deliberately error out on kernel swap
@@ -206,8 +205,6 @@ static blk_qc_t vbswap_make_request(struct request_queue *queue,
 		bio_io_error(bio);
 	else
 		__vbswap_make_request(bio, bio_data_dir(bio));
-
-	return BLK_QC_T_NONE;
 }
 
 static const struct block_device_operations vbswap_fops = {
