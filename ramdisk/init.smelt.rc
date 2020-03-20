@@ -75,6 +75,11 @@ on boot
   write /sys/class/kgsl/kgsl-3d0/devfreq/min_freq 200000000
   write /sys/class/kgsl/kgsl-3d0/devfreq/governor performance
 
+  # Use minimum brightness during boot
+  write /sys/module/leds_lm3535/parameters/lock_brightness 0
+  write /sys/class/leds/lcd-backlight/brightness 5
+  write /sys/module/leds_lm3535/parameters/lock_brightness 1
+
   mkdir /data/location 0775 root system
 
   # ACDB file path
@@ -158,6 +163,9 @@ on property:sys.boot_completed=1
   # Free memory cache
   write /proc/sysrq-trigger s
   write /proc/sys/vm/drop_caches 3
+
+  # Use minimum brightness during boot
+  write /sys/module/leds_lm3535/parameters/lock_brightness 0
 
   start charge-sh
 
