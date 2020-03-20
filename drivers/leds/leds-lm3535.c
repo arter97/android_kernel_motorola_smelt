@@ -751,6 +751,9 @@ static void lm3535_brightness_set_raw_als(struct led_classdev *led_cdev,
 	mutex_unlock(&lm3535_mutex);
 }
 #endif
+
+static bool lock_brightness;
+module_param(lock_brightness, bool, 0644);
 static void lm3535_brightness_set(struct led_classdev *led_cdev,
 				  enum led_brightness value)
 {
@@ -761,6 +764,11 @@ static void lm3535_brightness_set(struct led_classdev *led_cdev,
 	unsigned bright_zone;
 	unsigned bvalue;
 	unsigned do_ramp = 1;
+
+	if (lock_brightness) {
+		pr_err("%s: brightness locked, ignoring set request\n", __func__);
+		return;
+	}
 
 	printk_br("%s: %s, 0x%x (%d)\n", __FUNCTION__,
 		  led_cdev->name, value, value);
