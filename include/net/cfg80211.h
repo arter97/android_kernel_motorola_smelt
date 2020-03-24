@@ -3866,7 +3866,6 @@ cfg80211_vendor_event_alloc(struct wiphy *wiphy, int approxlen,
  */
 static inline void cfg80211_vendor_event(struct sk_buff *skb, gfp_t gfp)
 {
-	__cfg80211_send_event_skb(skb, gfp);
 }
 
 #ifdef CONFIG_NL80211_TESTMODE
