@@ -1,5 +1,7 @@
 #!/system/bin/sh
 
+export PATH=/system/xbin:/system/bin:$PATH
+
 busybox mount --bind /data/bind/system/app /system/app
 busybox mount --bind /data/bind/system/framework /system/framework
 busybox mount --bind /data/bind/system/priv-app /system/priv-app
