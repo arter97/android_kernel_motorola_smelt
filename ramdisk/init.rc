@@ -590,6 +590,10 @@ on property:sys.init_log_level=*
     loglevel ${sys.init_log_level}
 
 on charger
+    # Use minimum brightness during charging
+    write /sys/module/leds_lm3535/parameters/lock_brightness 0
+    write /sys/class/leds/lcd-backlight/brightness 5
+    write /sys/module/leds_lm3535/parameters/lock_brightness 1
     mount_all /fstab.smelt
     class_start charger
 
