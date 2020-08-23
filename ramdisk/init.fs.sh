@@ -15,4 +15,7 @@ busybox swapon /dev/block/vbswap0
 
 touch /dev/fstab.ready
 
+# Setup readahead
+find /sys/devices -name read_ahead_kb | while read node; do echo 32 > $node; done
+
 busybox fstrim -v /data
