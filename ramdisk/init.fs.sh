@@ -11,6 +11,6 @@ echo 180 > /proc/sys/vm/swappiness
 busybox mkswap /dev/block/vbswap0
 busybox swapon /dev/block/vbswap0
 
-touch /fstab.ready
+touch /dev/fstab.ready
 
 busybox fstrim -v /data

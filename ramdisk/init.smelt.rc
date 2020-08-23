@@ -128,7 +128,7 @@ service m4setup /system/bin/m4setup
 on fs
   mount_all /fstab.smelt
   start init-fs
-  wait /fstab.ready
+  wait /dev/fstab.ready
 
   restorecon_recursive /persist
 
