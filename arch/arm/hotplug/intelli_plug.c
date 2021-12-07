@@ -22,7 +22,6 @@
 #include <linux/mutex.h>
 #include <linux/module.h>
 #include <linux/slab.h>
-#include <linux/input.h>
 #include <linux/cpufreq.h>
 
 #define DEF_SAMPLING_MS			(268)
@@ -36,12 +35,10 @@
 static DEFINE_MUTEX(intelli_plug_mutex);
 
 static struct delayed_work intelli_plug_work;
-static struct delayed_work intelli_plug_boost;
 
 static struct workqueue_struct *intelliplug_wq;
 
 static __read_mostly bool enabled = false;
-static __read_mostly bool touch_boost = false;
 static __read_mostly unsigned int nr_run_profile_sel = 0;
 
 //default to something sane rather than zero
@@ -64,7 +61,6 @@ static const struct kernel_param_ops enabled_param_ops = {
 };
 
 module_param_cb(enabled, &enabled_param_ops, &enabled, 0664);
-module_param(touch_boost, bool, 0664);
 module_param(nr_run_profile_sel, uint, 0664);
 
 static int persist_count = 0;
@@ -194,17 +190,6 @@ static inline unsigned int calculate_thread_stats(void)
 	nr_run_last = nr_run;
 
 	return nr_run;
-}
-
-static void __ref intelli_plug_boost_fn(struct work_struct *work)
-{
-
-	int nr_cpus = num_online_cpus();
-
-	if (enabled)
-		if (touch_boost)
-			if (nr_cpus < 2)
-				cpu_up(1);
 }
 
 /*
@@ -391,80 +376,6 @@ void __ref intelli_plug_resume(void)
 	}
 }
 
-static void intelli_plug_input_event(struct input_handle *handle,
-		unsigned int type, unsigned int code, int value)
-{
-	pr_debug("intelli_plug touched!\n");
-
-	if (enabled && touch_boost && !suspended)
-		queue_delayed_work_on(0, intelliplug_wq, &intelli_plug_boost,
-			msecs_to_jiffies(10));
-}
-
-static int intelli_plug_input_connect(struct input_handler *handler,
-		struct input_dev *dev, const struct input_device_id *id)
-{
-	struct input_handle *handle;
-	int error;
-
-	handle = kzalloc(sizeof(struct input_handle), GFP_KERNEL);
-	if (!handle)
-		return -ENOMEM;
-
-	handle->dev = dev;
-	handle->handler = handler;
-	handle->name = "intelliplug";
-
-	error = input_register_handle(handle);
-	if (error)
-		goto err2;
-
-	error = input_open_device(handle);
-	if (error)
-		goto err1;
-	pr_info("%s found and connected!\n", dev->name);
-	return 0;
-err1:
-	input_unregister_handle(handle);
-err2:
-	kfree(handle);
-	return error;
-}
-
-static void intelli_plug_input_disconnect(struct input_handle *handle)
-{
-	input_close_device(handle);
-	input_unregister_handle(handle);
-	kfree(handle);
-}
-
-static const struct input_device_id intelli_plug_ids[] = {
-	{
-		.flags = INPUT_DEVICE_ID_MATCH_EVBIT |
-			 INPUT_DEVICE_ID_MATCH_ABSBIT,
-		.evbit = { BIT_MASK(EV_ABS) },
-		.absbit = { [BIT_WORD(ABS_MT_POSITION_X)] =
-			    BIT_MASK(ABS_MT_POSITION_X) |
-			    BIT_MASK(ABS_MT_POSITION_Y) },
-	}, /* multi-touch touchscreen */
-	{
-		.flags = INPUT_DEVICE_ID_MATCH_KEYBIT |
-			 INPUT_DEVICE_ID_MATCH_ABSBIT,
-		.keybit = { [BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH) },
-		.absbit = { [BIT_WORD(ABS_X)] =
-			    BIT_MASK(ABS_X) | BIT_MASK(ABS_Y) },
-	}, /* touchpad */
-	{ },
-};
-
-static struct input_handler intelli_plug_input_handler = {
-	.event          = intelli_plug_input_event,
-	.connect        = intelli_plug_input_connect,
-	.disconnect     = intelli_plug_input_disconnect,
-	.name           = "intelliplug_handler",
-	.id_table       = intelli_plug_ids,
-};
-
 int __init intelli_plug_init(void)
 {
 	int rc;
@@ -476,12 +387,9 @@ int __init intelli_plug_init(void)
 	l_ip_info->sys_max = policy->cpuinfo.max_freq;
 	l_ip_info->cur_max = policy->max;
 
-	rc = input_register_handler(&intelli_plug_input_handler);
-
 	intelliplug_wq = alloc_workqueue("intelliplug",
 				WQ_HIGHPRI | WQ_UNBOUND, 1);
 	INIT_DELAYED_WORK(&intelli_plug_work, intelli_plug_work_fn);
-	INIT_DELAYED_WORK(&intelli_plug_boost, intelli_plug_boost_fn);
 	queue_delayed_work_on(0, intelliplug_wq, &intelli_plug_work,
 		msecs_to_jiffies(10));
 
