@@ -263,8 +263,8 @@ static void __ref intelli_plug_work_fn(struct work_struct *work)
 			if (persist_count == 0)
 				persist_count = DUAL_PERSISTENCE;
 			if (nr_cpus < 2) {
-				for (i = 1; i < cpu_count; i++)
-					cpu_up(i);
+				if (cpu_count >= 1)
+					cpu_up(1);
 			} else {
 				unplug_cpu(1);
 			}
@@ -274,8 +274,8 @@ static void __ref intelli_plug_work_fn(struct work_struct *work)
 			if (persist_count == 0)
 				persist_count = TRI_PERSISTENCE;
 			if (nr_cpus < 3) {
-				for (i = 1; i < cpu_count; i++)
-					cpu_up(i);
+				if (cpu_count >= 1)
+					cpu_up(1);
 			} else {
 				unplug_cpu(2);
 			}
@@ -285,8 +285,8 @@ static void __ref intelli_plug_work_fn(struct work_struct *work)
 			if (persist_count == 0)
 				persist_count = QUAD_PERSISTENCE;
 			if (nr_cpus < 4)
-				for (i = 1; i < cpu_count; i++)
-					cpu_up(i);
+				if (cpu_count >= 1)
+					cpu_up(1);
 			pr_debug("case 4: %u\n", persist_count);
 			break;
 		default:
