@@ -63,6 +63,7 @@ struct qpnp_vib {
 	int state;
 	int vtg_level;
 	int wanted_vtg_level;
+	int prev_vtg_level;
 	int timeout;
 	int cur;
 	struct mutex lock;
@@ -209,6 +210,15 @@ static int qpnp_vib_set(struct qpnp_vib *vib, int on)
 	return 0;
 }
 
+// Boost [boost_min,boost_max]ms to use vtg_level of boost_to
+static int __read_mostly boost_min;
+static int __read_mostly boost_max;
+static int __read_mostly boost_to;
+
+module_param(boost_min, int, 0644);
+module_param(boost_max, int, 0644);
+module_param(boost_to, int, 0644);
+
 static void qpnp_vib_enable(struct timed_output_dev *dev, int value)
 {
 	struct qpnp_vib *vib = container_of(dev, struct qpnp_vib,
@@ -223,6 +233,12 @@ static void qpnp_vib_enable(struct timed_output_dev *dev, int value)
 	} else {
 		value = (value > vib->timeout ?
 				 vib->timeout : value);
+
+		if (boost_min <= value && value <= boost_max && vib->wanted_vtg_level != boost_to) {
+			vib->prev_vtg_level = vib->wanted_vtg_level;
+			vib->wanted_vtg_level = boost_to;
+		}
+
 		vib->state = 1;
 		qpnp_vib_set(vib, vib->state);
 		vib->cur = value;
@@ -238,6 +254,9 @@ static void qpnp_vib_turnoff(struct work_struct *work)
 	vib->state = 0;
 	qpnp_vib_set(vib, vib->state);
 	vib->cur = 0;
+
+	// Restore un-boosted vtg_level
+	vib->wanted_vtg_level = vib->prev_vtg_level;
 }
 
 static int qpnp_vib_get_time(struct timed_output_dev *dev)
@@ -296,6 +315,7 @@ static int qpnp_vib_parse_dt(struct qpnp_vib *vib)
 	else if (vib->vtg_level > QPNP_VIB_MAX_LEVEL)
 		vib->vtg_level = QPNP_VIB_MAX_LEVEL;
 	vib->wanted_vtg_level = vib->vtg_level;
+	vib->prev_vtg_level = vib->vtg_level;
 
 	vib->mode = QPNP_VIB_MANUAL;
 	rc = of_property_read_string(spmi->dev.of_node, "qcom,mode", &mode);
@@ -377,6 +397,7 @@ static ssize_t qpnp_vib_level_store(struct device *dev,
 
 	qpnp_set_vtg_level(vib, val);
 	vib->wanted_vtg_level = val;
+	vib->prev_vtg_level = val;
 
 	return strnlen(buf, count);
 }
