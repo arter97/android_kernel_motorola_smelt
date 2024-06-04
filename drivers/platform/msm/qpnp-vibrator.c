@@ -213,16 +213,16 @@ static int qpnp_vib_set(struct qpnp_vib *vib, int on)
 }
 
 // Boost [boost_min,boost_max]ms to use vtg_level of boost_to
-static int __read_mostly boost_min;
-static int __read_mostly boost_max;
-static int __read_mostly boost_to;
+static int __read_mostly boost_min = 100;
+static int __read_mostly boost_max = 500;
+static int __read_mostly boost_to = 28;
 
 module_param(boost_min, int, 0644);
 module_param(boost_max, int, 0644);
 module_param(boost_to, int, 0644);
 
-static int custom_target;
-static int custom_pattern[10];
+static int custom_target = 150;
+static int custom_pattern[10] = { 150,50,350,50,0,0,0,0,0,0 };
 module_param(custom_target, int, 0644);
 module_param_array(custom_pattern, int, NULL, 0644);
 
