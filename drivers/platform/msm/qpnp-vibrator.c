@@ -177,16 +177,6 @@ static int qpnp_vib_set(struct qpnp_vib *vib, int on)
 	return 0;
 }
 
-static int __read_mostly adjust_before_min;
-static int __read_mostly adjust_before_max;
-static int __read_mostly adjust_after_min;
-static int __read_mostly adjust_after_max;
-
-module_param(adjust_before_min, int, 0644);
-module_param(adjust_before_max, int, 0644);
-module_param(adjust_after_min, int, 0644);
-module_param(adjust_after_max, int, 0644);
-
 static void qpnp_vib_enable(struct timed_output_dev *dev, int value)
 {
 	struct qpnp_vib *vib = container_of(dev, struct qpnp_vib,
@@ -206,10 +196,6 @@ retry:
 	else {
 		value = (value > vib->timeout ?
 				 vib->timeout : value);
-		// Adjust proportionally
-		if (adjust_before_min <= value && value <= adjust_before_max)
-			value = ((value - adjust_before_min) * (adjust_after_max - adjust_after_min)) /
-				(adjust_before_max - adjust_before_min) + adjust_after_min;
 		vib->state = 1;
 		hrtimer_start(&vib->vib_timer,
 			      ktime_set(value / 1000, (value % 1000) * 1000000),
