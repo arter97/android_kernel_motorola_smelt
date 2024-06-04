@@ -16,7 +16,6 @@
 #include <linux/errno.h>
 #include <linux/slab.h>
 #include <linux/device.h>
-#include <linux/hrtimer.h>
 #include <linux/of_device.h>
 #include <linux/spmi.h>
 #include <linux/qpnp/pwm.h>
@@ -52,9 +51,8 @@ struct qpnp_pwm_info {
 
 struct qpnp_vib {
 	struct spmi_device *spmi;
-	struct hrtimer vib_timer;
 	struct timed_output_dev timed_dev;
-	struct work_struct work;
+	struct delayed_work turnoff_work;
 	struct qpnp_pwm_info pwm_info;
 	enum   qpnp_vib_mode mode;
 
@@ -65,6 +63,7 @@ struct qpnp_vib {
 	int state;
 	int vtg_level;
 	int timeout;
+	int cur;
 	struct mutex lock;
 };
 
@@ -182,50 +181,36 @@ static void qpnp_vib_enable(struct timed_output_dev *dev, int value)
 					 timed_dev);
 
 	mutex_lock(&vib->lock);
-	hrtimer_cancel(&vib->vib_timer);
+	cancel_delayed_work_sync(&vib->turnoff_work);
 
-	if (value == 0)
+	if (value == 0) {
 		vib->state = 0;
-	else {
+		vib->cur = 0;
+	} else {
 		value = (value > vib->timeout ?
 				 vib->timeout : value);
 		vib->state = 1;
-		hrtimer_start(&vib->vib_timer,
-			      ktime_set(value / 1000, (value % 1000) * 1000000),
-			      HRTIMER_MODE_REL);
+		qpnp_vib_set(vib, vib->state);
+		vib->cur = value;
+		queue_delayed_work(system_highpri_wq, &vib->turnoff_work, msecs_to_jiffies(value));
 	}
 	mutex_unlock(&vib->lock);
-	schedule_work(&vib->work);
 }
 
-static void qpnp_vib_update(struct work_struct *work)
+static void qpnp_vib_turnoff(struct work_struct *work)
 {
-	struct qpnp_vib *vib = container_of(work, struct qpnp_vib,
-					 work);
+	struct qpnp_vib *vib = container_of(work, struct qpnp_vib, turnoff_work.work);
+
+	vib->state = 0;
 	qpnp_vib_set(vib, vib->state);
+	vib->cur = 0;
 }
 
 static int qpnp_vib_get_time(struct timed_output_dev *dev)
 {
 	struct qpnp_vib *vib = container_of(dev, struct qpnp_vib,
 							 timed_dev);
-
-	if (hrtimer_active(&vib->vib_timer)) {
-		ktime_t r = hrtimer_get_remaining(&vib->vib_timer);
-		return (int)ktime_to_us(r);
-	} else
-		return 0;
-}
-
-static enum hrtimer_restart qpnp_vib_timer_func(struct hrtimer *timer)
-{
-	struct qpnp_vib *vib = container_of(timer, struct qpnp_vib,
-							 vib_timer);
-
-	vib->state = 0;
-	schedule_work(&vib->work);
-
-	return HRTIMER_NORESTART;
+	return vib->cur;
 }
 
 #ifdef CONFIG_PM
@@ -233,10 +218,10 @@ static int qpnp_vibrator_suspend(struct device *dev)
 {
 	struct qpnp_vib *vib = dev_get_drvdata(dev);
 
-	hrtimer_cancel(&vib->vib_timer);
-	cancel_work_sync(&vib->work);
+	cancel_delayed_work_sync(&vib->turnoff_work);
 	/* turn-off vibrator */
 	qpnp_vib_set(vib, 0);
+	vib->cur = 0;
 
 	return 0;
 }
@@ -412,10 +397,7 @@ static int qpnp_vibrator_probe(struct spmi_device *spmi)
 	}
 
 	mutex_init(&vib->lock);
-	INIT_WORK(&vib->work, qpnp_vib_update);
-
-	hrtimer_init(&vib->vib_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	vib->vib_timer.function = qpnp_vib_timer_func;
+	INIT_DELAYED_WORK(&vib->turnoff_work, qpnp_vib_turnoff);
 
 	vib->timed_dev.name = "vibrator";
 	vib->timed_dev.get_time = qpnp_vib_get_time;
@@ -436,8 +418,7 @@ static int qpnp_vibrator_remove(struct spmi_device *spmi)
 {
 	struct qpnp_vib *vib = dev_get_drvdata(&spmi->dev);
 
-	cancel_work_sync(&vib->work);
-	hrtimer_cancel(&vib->vib_timer);
+	cancel_delayed_work_sync(&vib->turnoff_work);
 	timed_output_dev_unregister(&vib->timed_dev);
 	mutex_destroy(&vib->lock);
 
