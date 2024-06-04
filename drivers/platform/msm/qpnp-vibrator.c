@@ -17,7 +17,6 @@
 #include <linux/slab.h>
 #include <linux/device.h>
 #include <linux/hrtimer.h>
-#include <linux/sched.h>
 #include <linux/of_device.h>
 #include <linux/spmi.h>
 #include <linux/qpnp/pwm.h>
@@ -187,7 +186,7 @@ retry:
 	spin_lock_irqsave(&vib->lock, flags);
 	if (hrtimer_try_to_cancel(&vib->vib_timer) < 0) {
 		spin_unlock_irqrestore(&vib->lock, flags);
-		schedule();
+		cpu_relax();
 		goto retry;
 	}
 
