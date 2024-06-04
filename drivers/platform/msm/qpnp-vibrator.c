@@ -141,6 +141,35 @@ static int qpnp_vibrator_config(struct qpnp_vib *vib)
 	return rc;
 }
 
+static int qpnp_set_vtg_level(struct qpnp_vib *vib, int val)
+{
+	int rc;
+	u8 reg = 0;
+
+	if (val < QPNP_VIB_MIN_LEVEL) {
+		pr_err("%s: level %d not in range (%d - %d), using min.", __func__, val, QPNP_VIB_MIN_LEVEL, QPNP_VIB_MAX_LEVEL);
+		val = QPNP_VIB_MIN_LEVEL;
+	} else if (val > QPNP_VIB_MAX_LEVEL) {
+		pr_err("%s: level %d not in range (%d - %d), using max.", __func__, val, QPNP_VIB_MIN_LEVEL, QPNP_VIB_MAX_LEVEL);
+		val = QPNP_VIB_MAX_LEVEL;
+	}
+
+	vib->vtg_level = val;
+
+	/* Configure the VTG CTL regiser */
+	rc = qpnp_vib_read_u8(vib, &reg, QPNP_VIB_VTG_CTL(vib->base));
+	if (rc < 0) {
+		pr_info("qpnp: error while reading vibration control register\n");
+		}
+	reg &= ~QPNP_VIB_VTG_SET_MASK;
+	reg |= (vib->vtg_level & QPNP_VIB_VTG_SET_MASK);
+	rc = qpnp_vib_write_u8(vib, &reg, QPNP_VIB_VTG_CTL(vib->base));
+	if (rc)
+		pr_info("qpnp: error while writing vibration control register\n");
+
+	return rc;
+}
+
 static int qpnp_vib_set(struct qpnp_vib *vib, int on)
 {
 	int rc;
@@ -340,26 +369,7 @@ static ssize_t qpnp_vib_level_store(struct device *dev,
 		return -EINVAL;
 	}
 
-	if (val < QPNP_VIB_MIN_LEVEL) {
-		pr_err("%s: level %d not in range (%d - %d), using min.", __func__, val, QPNP_VIB_MIN_LEVEL, QPNP_VIB_MAX_LEVEL);
-		val = QPNP_VIB_MIN_LEVEL;
-	} else if (val > QPNP_VIB_MAX_LEVEL) {
-		pr_err("%s: level %d not in range (%d - %d), using max.", __func__, val, QPNP_VIB_MIN_LEVEL, QPNP_VIB_MAX_LEVEL);
-		val = QPNP_VIB_MAX_LEVEL;
-	}
-
-	vib->vtg_level = val;
-
-	/* Configure the VTG CTL regiser */
-	rc = qpnp_vib_read_u8(vib, &reg, QPNP_VIB_VTG_CTL(vib->base));
-	if (rc < 0) {
-		pr_info("qpnp: error while reading vibration control register\n");
-		}
-	reg &= ~QPNP_VIB_VTG_SET_MASK;
-	reg |= (vib->vtg_level & QPNP_VIB_VTG_SET_MASK);
-	rc = qpnp_vib_write_u8(vib, &reg, QPNP_VIB_VTG_CTL(vib->base));
-	if (rc)
-		pr_info("qpnp: error while writing vibration control register\n");
+	qpnp_set_vtg_level(vib, val);
 
 	return strnlen(buf, count);
 }
