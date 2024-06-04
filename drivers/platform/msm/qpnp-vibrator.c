@@ -177,10 +177,10 @@ static int qpnp_vib_set(struct qpnp_vib *vib, int on)
 	return 0;
 }
 
-static int __read_mostly adjust_before_min;
-static int __read_mostly adjust_before_max;
-static int __read_mostly adjust_after_min;
-static int __read_mostly adjust_after_max;
+static int __read_mostly adjust_before_min = 100;
+static int __read_mostly adjust_before_max = 1000;
+static int __read_mostly adjust_after_min = 300;
+static int __read_mostly adjust_after_max = 1200;
 
 module_param(adjust_before_min, int, 0644);
 module_param(adjust_before_max, int, 0644);
