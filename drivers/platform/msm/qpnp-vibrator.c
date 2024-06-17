@@ -62,6 +62,7 @@ struct qpnp_vib {
 	u16 base;
 	int state;
 	int vtg_level;
+	int wanted_vtg_level;
 	int timeout;
 	int cur;
 	struct mutex lock;
@@ -176,6 +177,10 @@ static int qpnp_vib_set(struct qpnp_vib *vib, int on)
 	u8 val;
 
 	if (on) {
+		// Update the VTG level, if necessary
+		if (vib->vtg_level != vib->wanted_vtg_level)
+			qpnp_set_vtg_level(vib, vib->wanted_vtg_level);
+
 		if (vib->mode != QPNP_VIB_MANUAL)
 			pwm_enable(vib->pwm_info.pwm_dev);
 		else {
@@ -290,6 +295,7 @@ static int qpnp_vib_parse_dt(struct qpnp_vib *vib)
 		vib->vtg_level = QPNP_VIB_MIN_LEVEL;
 	else if (vib->vtg_level > QPNP_VIB_MAX_LEVEL)
 		vib->vtg_level = QPNP_VIB_MAX_LEVEL;
+	vib->wanted_vtg_level = vib->vtg_level;
 
 	vib->mode = QPNP_VIB_MANUAL;
 	rc = of_property_read_string(spmi->dev.of_node, "qcom,mode", &mode);
@@ -370,6 +376,7 @@ static ssize_t qpnp_vib_level_store(struct device *dev,
 	}
 
 	qpnp_set_vtg_level(vib, val);
+	vib->wanted_vtg_level = val;
 
 	return strnlen(buf, count);
 }
