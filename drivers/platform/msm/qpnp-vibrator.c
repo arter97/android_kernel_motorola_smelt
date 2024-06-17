@@ -11,6 +11,7 @@
  */
 
 #include <linux/module.h>
+#include <linux/delay.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
 #include <linux/errno.h>
@@ -53,6 +54,7 @@ struct qpnp_vib {
 	struct spmi_device *spmi;
 	struct timed_output_dev timed_dev;
 	struct delayed_work turnoff_work;
+	struct work_struct custom_work;
 	struct qpnp_pwm_info pwm_info;
 	enum   qpnp_vib_mode mode;
 
@@ -219,12 +221,63 @@ module_param(boost_min, int, 0644);
 module_param(boost_max, int, 0644);
 module_param(boost_to, int, 0644);
 
+static int custom_target;
+static int custom_pattern[10];
+module_param(custom_target, int, 0644);
+module_param_array(custom_pattern, int, NULL, 0644);
+
+static void qpnp_async_play_custom_pattern(struct work_struct *work)
+{
+	struct qpnp_vib *vib = container_of(work, struct qpnp_vib,
+					 custom_work);
+	int idx, value;
+
+	for (idx = 0; idx < ARRAY_SIZE(custom_pattern); idx++) {
+		value = custom_pattern[idx];
+		if (value == 0)
+			break;
+
+		if (idx % 2 == 0) {
+			// On
+			if (boost_min <= value && value <= boost_max) {
+				if (vib->wanted_vtg_level != boost_to) {
+					vib->prev_vtg_level = vib->wanted_vtg_level;
+					vib->wanted_vtg_level = boost_to;
+				}
+			} else {
+				vib->wanted_vtg_level = vib->prev_vtg_level;
+			}
+
+			vib->state = 1;
+			qpnp_vib_set(vib, vib->state);
+			vib->cur = value;
+		} else {
+			// Off
+			vib->state = 0;
+			qpnp_vib_set(vib, vib->state);
+			vib->cur = 0;
+		}
+		msleep(value);
+	}
+
+	// Turn off, if not already
+	if (vib->state == 1) {
+		vib->state = 0;
+		qpnp_vib_set(vib, vib->state);
+		vib->cur = 0;
+	}
+
+	// Restore un-boosted vtg_level
+	vib->wanted_vtg_level = vib->prev_vtg_level;
+}
+
 static void qpnp_vib_enable(struct timed_output_dev *dev, int value)
 {
 	struct qpnp_vib *vib = container_of(dev, struct qpnp_vib,
 					 timed_dev);
 
 	mutex_lock(&vib->lock);
+	cancel_work_sync(&vib->custom_work);
 	cancel_delayed_work_sync(&vib->turnoff_work);
 
 	if (value == 0) {
@@ -234,15 +287,19 @@ static void qpnp_vib_enable(struct timed_output_dev *dev, int value)
 		value = (value > vib->timeout ?
 				 vib->timeout : value);
 
-		if (boost_min <= value && value <= boost_max && vib->wanted_vtg_level != boost_to) {
-			vib->prev_vtg_level = vib->wanted_vtg_level;
-			vib->wanted_vtg_level = boost_to;
-		}
+		if (value && value == custom_target) {
+			queue_work(system_highpri_wq, &vib->custom_work);
+		} else {
+			if (boost_min <= value && value <= boost_max && vib->wanted_vtg_level != boost_to) {
+				vib->prev_vtg_level = vib->wanted_vtg_level;
+				vib->wanted_vtg_level = boost_to;
+			}
 
-		vib->state = 1;
-		qpnp_vib_set(vib, vib->state);
-		vib->cur = value;
-		queue_delayed_work(system_highpri_wq, &vib->turnoff_work, msecs_to_jiffies(value));
+			vib->state = 1;
+			qpnp_vib_set(vib, vib->state);
+			vib->cur = value;
+			queue_delayed_work(system_highpri_wq, &vib->turnoff_work, msecs_to_jiffies(value));
+		}
 	}
 	mutex_unlock(&vib->lock);
 }
@@ -436,6 +493,7 @@ static int qpnp_vibrator_probe(struct spmi_device *spmi)
 
 	mutex_init(&vib->lock);
 	INIT_DELAYED_WORK(&vib->turnoff_work, qpnp_vib_turnoff);
+	INIT_WORK(&vib->custom_work, qpnp_async_play_custom_pattern);
 
 	vib->timed_dev.name = "vibrator";
 	vib->timed_dev.get_time = qpnp_vib_get_time;
