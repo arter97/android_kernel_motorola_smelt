@@ -275,8 +275,7 @@ static void qpnp_vib_enable(struct timed_output_dev *dev, int value)
 	cancel_delayed_work_sync(&vib->turnoff_work);
 
 	if (value == 0) {
-		vib->state = 0;
-		vib->cur = 0;
+		qpnp_vib_turnoff(vib, 0);
 	} else {
 		value = (value > vib->timeout ?
 				 vib->timeout : value);
