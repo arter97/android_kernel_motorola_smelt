@@ -71,6 +71,8 @@ struct qpnp_vib {
 	struct mutex lock;
 };
 
+static void qpnp_vib_turnoff(struct qpnp_vib *vib, int check);
+
 static int qpnp_vib_read_u8(struct qpnp_vib *vib, u8 *data, u16 reg)
 {
 	int rc;
@@ -260,15 +262,7 @@ static void qpnp_async_play_custom_pattern(struct work_struct *work)
 		msleep(value);
 	}
 
-	// Turn off, if not already
-	if (vib->state == 1) {
-		vib->state = 0;
-		qpnp_vib_set(vib, vib->state);
-		vib->cur = 0;
-	}
-
-	// Restore un-boosted vtg_level
-	vib->wanted_vtg_level = vib->prev_vtg_level;
+	qpnp_vib_turnoff(vib, 1);
 }
 
 static void qpnp_vib_enable(struct timed_output_dev *dev, int value)
@@ -304,16 +298,22 @@ static void qpnp_vib_enable(struct timed_output_dev *dev, int value)
 	mutex_unlock(&vib->lock);
 }
 
-static void qpnp_vib_turnoff(struct work_struct *work)
+static void qpnp_vib_turnoff(struct qpnp_vib *vib, int check)
 {
-	struct qpnp_vib *vib = container_of(work, struct qpnp_vib, turnoff_work.work);
-
-	vib->state = 0;
-	qpnp_vib_set(vib, vib->state);
-	vib->cur = 0;
+	if (!check || vib->state == 1) {
+		vib->state = 0;
+		qpnp_vib_set(vib, vib->state);
+		vib->cur = 0;
+	}
 
 	// Restore un-boosted vtg_level
 	vib->wanted_vtg_level = vib->prev_vtg_level;
+}
+
+static void qpnp_vib_turnoff_work(struct work_struct *work)
+{
+	struct qpnp_vib *vib = container_of(work, struct qpnp_vib, turnoff_work.work);
+	qpnp_vib_turnoff(vib, 0);
 }
 
 static int qpnp_vib_get_time(struct timed_output_dev *dev)
@@ -492,7 +492,7 @@ static int qpnp_vibrator_probe(struct spmi_device *spmi)
 	}
 
 	mutex_init(&vib->lock);
-	INIT_DELAYED_WORK(&vib->turnoff_work, qpnp_vib_turnoff);
+	INIT_DELAYED_WORK(&vib->turnoff_work, qpnp_vib_turnoff_work);
 	INIT_WORK(&vib->custom_work, qpnp_async_play_custom_pattern);
 
 	vib->timed_dev.name = "vibrator";
